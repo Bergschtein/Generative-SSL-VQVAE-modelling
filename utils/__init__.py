@@ -78,7 +78,7 @@ def freeze(model):
         param.requires_grad = False
 
 
-def ssl_config_filename(config, model_type):
+def model_filename(config, model_type):
     """
     Generates a filename for the SSL configuration based on the provided settings.
     """
@@ -99,8 +99,8 @@ def ssl_config_filename(config, model_type):
     if stage1_method != "":
         stage1_text = f"{stage1_method}_{stage1_weight}_"
 
-    # Only MAGE model has SSL on stage2
-    if stage2_method != "" and model_type == "MAGE":
+    # Only MAGE and sslmaskgit model has SSL on stage2
+    if stage2_method != "" and (model_type == "MAGE" or model_type == "sslmaskgit"):
         stage2_text = f"_{stage2_method}_{stage2_weight}"
 
     filename_parts = [
@@ -143,7 +143,7 @@ def save_model(models_dict: dict, dirname="saved_models", id: str = ""):
             )
 
 
-def encode_data(dataloader, encoder, n_fft, vq_model=None, cuda=True):
+def encode_data(dataloader, encoder, n_fft, vq_model=None, device="cuda"):
     """
     Function to encode the data using the encoder and optionally the quantizer.
     It encodes to continous latent variables by default (vq_model=False).
@@ -156,10 +156,8 @@ def encode_data(dataloader, encoder, n_fft, vq_model=None, cuda=True):
     # Iterate over the entire dataloader
     for batch in dataloader:
         x, y = batch  # Unpack the batch.
-
+        x.to(device)
         # Perform the encoding
-        if cuda:
-            x = x.cuda()
         C = x.shape[1]
         xf = time_to_timefreq(x, n_fft, C).to(
             x.device
@@ -175,10 +173,6 @@ def encode_data(dataloader, encoder, n_fft, vq_model=None, cuda=True):
         )  # Make sure to detach y and move to CPU as well
 
     # Convert lists of lists to 2D tensors
-    z_encoded = torch.tensor(z_list)
-    ys = torch.tensor(y_list)
-    if cuda:
-        z_encoded = z_encoded.cuda()
-        ys = ys.cuda()
-
+    z_encoded = torch.tensor(z_list, device=device)
+    ys = torch.tensor(y_list, device=device)
     return z_encoded, ys
