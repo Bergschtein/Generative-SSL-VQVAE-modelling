@@ -13,23 +13,23 @@ from trainers.train_ssl_maskgit import train_ssl_maskgit
 from trainers.train_mage import train_mage
 
 UCR_SUBSET = [
-    "ElectricDevices",
+    # "ElectricDevices",
     # "StarLightCurves",
     # "Wafer",
     # "ECG5000",
     # "TwoPatterns",
     "FordA",
-    # "UWaveGestureLibraryAll",
+    "UWaveGestureLibraryAll",
     "FordB",
-    # "ChlorineConcentration",
-    # "ShapesAll",
+    "ChlorineConcentration",
+    "ShapesAll",
 ]
 
 FINISHED_STAGE1 = {}
 FINISHED_STAGE2 = {}
 
-STAGE1_EPOCHS = 1
-STAGE2_EPOCHS = 1
+STAGE1_EPOCHS = 1500
+STAGE2_EPOCHS = 3000
 
 STAGE1_METHODS = ["", "vibcreg"]
 STAGE2_METHODS = [""]  # "vibcreg"]

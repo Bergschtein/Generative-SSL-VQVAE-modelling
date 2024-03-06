@@ -5,12 +5,12 @@
 
 #SBATCH --partition=GPUQ          # Asking for a GPU
 #SBATCH --gres=gpu:1
-#SBATCH --mem=32G                 # Asking for 16GB RAM
+#SBATCH --mem=32G                 # Asking for 32GB RAM
 #SBATCH --nodes=1
 #SBATCH --output=output.txt      # Specifying 'stdout'
 #SBATCH --error=output.err        # Specifying 'stderr'
 
-#SBATCH --mail-user=erlendnl@stud.ntnu.no
+#SBATCH --mail-user=johanvm@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
