@@ -433,9 +433,9 @@ class Exp_SSL_VQVAE(ExpBase):
             self.downstream_step()
             logged = True
         if self.current_epoch == (self.last_epoch - 1) and not logged:
-            self.downstream_step()
+            self.downstream_step(tsne=True)
 
     @torch.no_grad()
     def on_train_epoch_start(self):
         if self.current_epoch == 0:
-            self.downstream_step(tsne=True)
+            self.downstream_step()
