@@ -28,13 +28,13 @@ UCR_SUBSET = [
 FINISHED_STAGE1 = {}
 FINISHED_STAGE2 = {}
 
-STAGE1_EPOCHS = 1500
+STAGE1_EPOCHS = 1
 STAGE2_EPOCHS = 3000
 
 STAGE1_METHODS = ["", "vibcreg"]
 STAGE2_METHODS = [""]  # "vibcreg"]
 
-SSL_WEIGHTS = {"barlowtwins": 1.0, "vicreg": 0.1, "vibcreg": 0.01, "": 0}
+SSL_WEIGHTS = {"barlowtwins": 1.0, "vicreg": 0.01, "vibcreg": 0.01, "": 0}
 
 
 def run_experiments():
@@ -83,6 +83,18 @@ def run_experiments():
                 c["SSL"]["stage1_weight"] = SSL_WEIGHTS[method]
 
                 # With SSL
+                train_ssl_vqvae(
+                    config=c,
+                    train_data_loader=train_data_loader_aug,
+                    test_data_loader=test_data_loader,
+                    do_validate=True,
+                    gpu_device_idx=0,
+                    wandb_run_name=f"{model_filename(c, 'sslvqvae')}-{dataset}",
+                    wandb_project_name=project_name_stage1,
+                )
+
+                c["VQVAE"]["decorrelate_codebook"] = False
+
                 train_ssl_vqvae(
                     config=c,
                     train_data_loader=train_data_loader_aug,
