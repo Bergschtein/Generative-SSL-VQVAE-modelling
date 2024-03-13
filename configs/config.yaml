@@ -1,5 +1,5 @@
 dataset:
-  dataset_name: "UWaveGestureLibraryAll"
+  dataset_name: "FordA"
   in_channels: 1
   data_scaling: True
   batch_sizes:
@@ -16,8 +16,8 @@ trainer_params:
   gpus:
     - 0
   max_epochs:
-    stage1: 400 #2000
-    stage2: 100 #1000 #1000 #10000
+    stage1: 1 #2000
+    stage2: 2 #1000 #1000 #10000
 
 encoder:
   dim: 64
@@ -39,12 +39,12 @@ VQVAE:
   commitment_weight: 1
   emb_dropout: 0.
   perceptual_loss_weight: 0
+  orthogonal_reg_weight: 10
 
-  # Hyperparameters when VQVAE are processing
-  # a original and augmented view of the same data.
-  recon_alternate_view_scale: 0.1
-  recon_original_view_scale: 0.9 #prioritize original view
-  decorrelate_codebook: True
+  # Additional hyperparameters for Two branch VQVAE with codebook decorrelation
+  recon_augmented_view_scale: 0.0
+  recon_original_view_scale: 1.0 #prioritize original view
+
   probe_test_per: 100
 
 MaskGIT:
@@ -84,7 +84,7 @@ class_guidance:
 SSL:
   stage1_method: "vibcreg" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
   stage1_weight: 0.1 # VibCReg: 0.1, BarlowTwins: 1, VICReg: 0.1
-  stage2_method: "" #"barlowtwins" "vicreg", "vibcreg"
+  stage2_method: "vibcreg" #"barlowtwins" "vicreg", "vibcreg"
   stage2_weight: 0.1
 
   # Hyperparameters for SSL methods.
@@ -113,7 +113,7 @@ augmentations:
 
   time_augs:
     #- "noise"
-    #- "amplitude_resize"
+    - "amplitude_resize"
     - "slope"
     #- 'flip'
     # - "noise_window"
@@ -121,11 +121,11 @@ augmentations:
     #- "random_masks"
     #- "block"
     #- "band"
-    - "phase"
+    # "phase"
     #- 'rotation'
     # - "gaussian"
     #- "shear"
-    - "scale"
+    # - "scale"
 
   aug_params:
     n_fft: 32

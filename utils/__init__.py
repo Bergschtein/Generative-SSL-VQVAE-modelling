@@ -97,6 +97,8 @@ def freeze(model):
 def model_filename(config, model_type):
     """
     Generates a filename for the SSL configuration based on the provided settings.
+
+    Creates a filename based on stage 1 configuration and stage 2 configuration.
     """
     SSL_config = config["SSL"]
 
@@ -109,11 +111,18 @@ def model_filename(config, model_type):
         SSL_config["stage2_weight"],
     )
 
+    ortogonal = config["VQVAE"]["orthogonal_reg_weight"] > 0
+    single_view = config["VQVAE"]["recon_augmented_view_scale"] == 0
+
     stage1_text = ""
     stage2_text = ""
 
     if stage1_method != "":
         stage1_text = f"{stage1_method}_{stage1_weight}_"
+        if ortogonal:
+            stage1_text += "orthogonal_"
+        if single_view:
+            stage1_text += "single_"
 
     # Only MAGE and sslmaskgit model has SSL on stage2
     if stage2_method != "" and (model_type == "MAGE" or model_type == "sslmaskgit"):

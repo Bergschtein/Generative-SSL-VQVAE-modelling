@@ -12,6 +12,8 @@ from trainers.train_maskgit import train_maskgit
 from trainers.train_ssl_maskgit import train_ssl_maskgit
 from trainers.train_mage import train_mage
 
+import torch
+
 UCR_SUBSET = [
     # "ElectricDevices",
     # "StarLightCurves",
@@ -31,17 +33,24 @@ FINISHED_STAGE2 = {}
 STAGE1_EPOCHS = 1500
 STAGE2_EPOCHS = 3000
 
-STAGE1_METHODS = ["", "vibcreg"]
+NUM_RUNS_PER = 1
+
+STAGE1_METHODS = ["vibcreg"]
 STAGE2_METHODS = [""]  # "vibcreg"]
 
 SSL_WEIGHTS = {"barlowtwins": 1.0, "vicreg": 0.01, "vibcreg": 0.01, "": 0}
 
 
 def run_experiments():
+    # Set random seed
+    torch.manual_seed(0)
+
     config_dir = get_root_dir().joinpath("configs", "config.yaml")
     config = load_yaml_param_settings(config_dir)
+
     config["trainer_params"]["max_epochs"]["stage1"] = STAGE1_EPOCHS
     config["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
+
     batch_size = config["dataset"]["batch_sizes"]["stage1"]
 
     project_name_stage1 = "SSL_VQVAE-STAGE1-IDUN"
@@ -67,83 +76,101 @@ def run_experiments():
         # STAGE 1
         for method in STAGE1_METHODS:
             if method == "":
-                # No SSL
-                train_vqvae(
-                    config=c,
-                    train_data_loader=train_data_loader_no_aug,
-                    test_data_loader=test_data_loader,
-                    do_validate=True,
-                    gpu_device_idx=0,
-                    wandb_run_name=f"{model_filename(c, 'vqvae')}-{dataset}",
-                    wandb_project_name=project_name_stage1,
-                )
-
-            elif method != "":
-                c["SSL"]["stage1_method"] = method
-                c["SSL"]["stage1_weight"] = SSL_WEIGHTS[method]
-
-                # With SSL
-                train_ssl_vqvae(
-                    config=c,
-                    train_data_loader=train_data_loader_aug,
-                    test_data_loader=test_data_loader,
-                    do_validate=True,
-                    gpu_device_idx=0,
-                    wandb_run_name=f"{model_filename(c, 'sslvqvae')}-{dataset}",
-                    wandb_project_name=project_name_stage1,
-                )
-
-                c["VQVAE"]["decorrelate_codebook"] = False
-
-                train_ssl_vqvae(
-                    config=c,
-                    train_data_loader=train_data_loader_aug,
-                    test_data_loader=test_data_loader,
-                    do_validate=True,
-                    gpu_device_idx=0,
-                    wandb_run_name=f"{model_filename(c, 'sslvqvae')}-{dataset}",
-                    wandb_project_name=project_name_stage1,
-                )
-        # STAGE 2
-        for method_1 in STAGE1_METHODS:
-            c["SSL"]["stage1_method"] = method_1
-            c["SSL"]["stage1_weight"] = SSL_WEIGHTS[method_1]
-
-            for method_2 in STAGE2_METHODS:
-                c["SSL"]["stage2_method"] = method_2
-                c["SSL"]["stage2_weight"] = SSL_WEIGHTS[method_2]
-
-                train_maskgit(
-                    config=c,
-                    train_data_loader=train_data_loader_no_aug,
-                    test_data_loader=test_data_loader,
-                    do_validate=True,
-                    gpu_device_idx=0,
-                    wandb_run_name=f"{model_filename(c, 'maskgit')}-{dataset}",
-                    wandb_project_name=project_name_stage2,
-                )
-                """
-                elif method_2 not in FINISHED_STAGE2[dataset]:
-                    train_ssl_maskgit(
+                # No SSL, plain VQVAE
+                for run in range(NUM_RUNS_PER):
+                    train_vqvae(
                         config=c,
                         train_data_loader=train_data_loader_no_aug,
                         test_data_loader=test_data_loader,
                         do_validate=True,
                         gpu_device_idx=0,
-                        wandb_run_name=f"{model_filename(c, 'sslmaskgit')}-{dataset}",
-                        wandb_project_name=project_name_stage2,
+                        wandb_run_name=f"{model_filename(c, 'vqvae')}-{dataset}-run{run+1}",
+                        wandb_project_name=project_name_stage1,
+                        torch_seed=0,
                     )
 
-                    train_mage(
+            elif method != "":
+                c["SSL"]["stage1_method"] = method
+                c["SSL"]["stage1_weight"] = SSL_WEIGHTS[method]
+
+                c["VQVAE"]["orthogonal_reg_weight"] = 0
+                c["VQVAE"]["recon_augmented_view_scale"] = 0.0
+                c["VQVAE"]["recon_original_view_scale"] = 1.0
+
+                # With SSL no orthogonal reg
+                for run in range(NUM_RUNS_PER):
+                    train_ssl_vqvae(
                         config=c,
                         train_data_loader=train_data_loader_aug,
                         test_data_loader=test_data_loader,
                         do_validate=True,
                         gpu_device_idx=0,
-                        wandb_run_name=f"{model_filename(c, 'mage')}-{dataset}",
-                        wandb_project_name=project_name,
+                        wandb_run_name=f"{model_filename(c, 'sslvqvae')}-{dataset}-run{run+1}",
+                        wandb_project_name=project_name_stage1,
+                        torch_seed=0,
                     )
-                """
+
+                # With SSL and orthogonal reg
+                c["VQVAE"]["orthogonal_reg_weight"] = 10
+                c["VQVAE"]["recon_augmented_view_scale"] = 0.0
+                c["VQVAE"]["recon_original_view_scale"] = 1.0
+
+                for run in range(NUM_RUNS_PER):
+                    train_ssl_vqvae(
+                        config=c,
+                        train_data_loader=train_data_loader_aug,
+                        test_data_loader=test_data_loader,
+                        do_validate=True,
+                        gpu_device_idx=0,
+                        wandb_run_name=f"{model_filename(c, 'sslvqvae')}-{dataset}-run{run+1}",
+                        wandb_project_name=project_name_stage1,
+                        torch_seed=0,
+                    )
+
+        # STAGE 2
+        c = config.copy()  # reset
+
+        for method_1 in STAGE1_METHODS:
+            c["SSL"]["stage1_method"] = method_1
+            c["SSL"]["stage1_weight"] = SSL_WEIGHTS[method_1]
+            # No orthogonal codebook
+            c["VQVAE"]["orthogonal_reg_weight"] = 0
+            c["VQVAE"]["recon_augmented_view_scale"] = 0.0
+            c["VQVAE"]["recon_original_view_scale"] = 1.0
+
+            for method_2 in STAGE2_METHODS:
+                c["SSL"]["stage2_method"] = method_2
+                c["SSL"]["stage2_weight"] = SSL_WEIGHTS[method_2]
+                for run in range(NUM_RUNS_PER):
+                    train_maskgit(
+                        config=c,
+                        train_data_loader=train_data_loader_no_aug,
+                        test_data_loader=test_data_loader,
+                        do_validate=True,
+                        gpu_device_idx=0,
+                        wandb_run_name=f"{model_filename(c, 'maskgit')}-{dataset}-run{run+1}",
+                        wandb_project_name=project_name_stage2,
+                        torch_seed=0,
+                    )
+
+            c["VQVAE"]["orthogonal_reg_weight"] = 10
+            c["VQVAE"]["recon_augmented_view_scale"] = 0.0
+            c["VQVAE"]["recon_original_view_scale"] = 1.0
+
+            for method_2 in STAGE2_METHODS:
+                c["SSL"]["stage2_method"] = method_2
+                c["SSL"]["stage2_weight"] = SSL_WEIGHTS[method_2]
+                for run in range(NUM_RUNS_PER):
+                    train_maskgit(
+                        config=c,
+                        train_data_loader=train_data_loader_no_aug,
+                        test_data_loader=test_data_loader,
+                        do_validate=True,
+                        gpu_device_idx=0,
+                        wandb_run_name=f"{model_filename(c, 'maskgit')}-{dataset}-run{run+1}",
+                        wandb_project_name=project_name_stage2,
+                        torch_seed=0,
+                    )
 
 
 if __name__ == "__main__":
