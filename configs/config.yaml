@@ -16,8 +16,8 @@ trainer_params:
   gpus:
     - 0
   max_epochs:
-    stage1: 1 #2000
-    stage2: 2 #1000 #1000 #10000
+    stage1: 1 #000
+    stage2: 200 #1000 #1000 #10000
 
 encoder:
   dim: 64
@@ -39,11 +39,11 @@ VQVAE:
   commitment_weight: 1
   emb_dropout: 0.
   perceptual_loss_weight: 0
-  orthogonal_reg_weight: 10
+  orthogonal_reg_weight: 0 #10
 
   # Additional hyperparameters for Two branch VQVAE with codebook decorrelation
-  recon_augmented_view_scale: 0.0
-  recon_original_view_scale: 1.0 #prioritize original view
+  recon_augmented_view_scale: 0.1
+  recon_original_view_scale: 0.9 #prioritize original view
 
   probe_test_per: 100
 
@@ -58,6 +58,9 @@ MaskGIT:
     ff_mult: 1
     use_rmsnorm: True
     p_unconditional: 0.2
+
+  # For the BYOL MaskGIT
+  moving_average_decay: 0.99
 
 MAGE:
   choice_temperature: 4 # for masking
@@ -82,9 +85,9 @@ class_guidance:
   guidance_scale: 1.
 
 SSL:
-  stage1_method: "vibcreg" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
-  stage1_weight: 0.1 # VibCReg: 0.1, BarlowTwins: 1, VICReg: 0.1
-  stage2_method: "vibcreg" #"barlowtwins" "vicreg", "vibcreg"
+  stage1_method: "" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
+  stage1_weight: 0.01 # VibCReg: 0.1, BarlowTwins: 1, VICReg: 0.1
+  stage2_method: "" #"barlowtwins" "vicreg", "vibcreg"
   stage2_weight: 0.1
 
   # Hyperparameters for SSL methods.
@@ -125,14 +128,14 @@ augmentations:
     #- 'rotation'
     # - "gaussian"
     #- "shear"
-    # - "scale"
+    #- "scale"
 
   aug_params:
     n_fft: 32
     #Time
     noise_std: 0.01
     noise_window_scale: 0.4
-    AmpR_rate: 0.1
+    AmpR_rate: 0.2
     slope_rate: 0.005
     #TimeFreq
     #Block aug:

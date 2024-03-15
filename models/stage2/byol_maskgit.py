@@ -28,7 +28,26 @@ from utils import (
 )
 
 
-class MaskGIT(nn.Module):
+class EMA:
+    def __init__(self, beta):
+        super().__init__()
+        self.beta = beta
+
+    def update_average(self, old, new):
+        if old is None:
+            return new
+        return old * self.beta + (1 - self.beta) * new
+
+
+def update_moving_average(ema_updater, ma_model, current_model):
+    for current_params, ma_params in zip(
+        current_model.parameters(), ma_model.parameters()
+    ):
+        old_weight, up_weight = ma_params.data, current_params.data
+        ma_params.data = ema_updater.update_average(old_weight, up_weight)
+
+
+class BYOLMaskGIT(nn.Module):
     """
     references:
         1. https://github.com/ML4ITS/TimeVQVAE/blob/main/generators/maskgit.py'
@@ -43,6 +62,7 @@ class MaskGIT(nn.Module):
         T: int,
         config: dict,
         n_classes: int,
+        moving_average_decay=0.99,
         **kwargs,
     ):
         super().__init__()
@@ -50,7 +70,7 @@ class MaskGIT(nn.Module):
         self.T = T
         self.config = config
         self.n_classes = n_classes
-
+        print("moving_average_decay:", moving_average_decay)
         self.mask_token_ids = config["VQVAE"]["codebook"]["size"]
         self.gamma = self.gamma_func("cosine")
         dataset_name = config["dataset"]["dataset_name"]
@@ -115,14 +135,27 @@ class MaskGIT(nn.Module):
         # pretrained discrete tokens
         embed = nn.Parameter(copy.deepcopy(self.vq_model._codebook.embed))
 
-        self.transformer = BidirectionalTransformer(
+        self.online_transformer = BidirectionalTransformer(
             self.num_tokens,
             config["VQVAE"]["codebook"]["size"],
             config["VQVAE"]["codebook"]["dim"],
             **config["MaskGIT"]["prior_model"],
             n_classes=n_classes,
             pretrained_tok_emb=embed,
+            online=True,
         )
+
+        self.target_transformer = BidirectionalTransformer(
+            self.num_tokens,
+            config["VQVAE"]["codebook"]["size"],
+            config["VQVAE"]["codebook"]["dim"],
+            **config["MaskGIT"]["prior_model"],
+            n_classes=n_classes,
+            pretrained_tok_emb=embed,
+            online=False,
+        )
+
+        self.target_ema_updater = EMA(moving_average_decay)
 
         # stochastic codebook sampling
         self.vq_model._codebook.sample_codebook_temp = stochastic_sampling
@@ -163,27 +196,41 @@ class MaskGIT(nn.Module):
         _, s = self.encode_to_z_q(x, self.encoder, self.vq_model)  # (b n)
 
         # randomly sample `t`
-        t = np.random.uniform(0, 1)
+        mask_token_ids = self.mask_token_ids
+        s_M_online = self.create_masks(s, mask_token_ids)  # (b n)
+        s_M_target = self.create_masks(s, mask_token_ids)  # (b n)
 
-        # create masks
-        n_masks = math.floor(self.gamma(t) * s.shape[1])
-        rand = torch.rand(s.shape, device=device)  # (b n)
-        mask = torch.zeros(s.shape, dtype=torch.bool, device=device)
-        mask.scatter_(dim=1, index=rand.topk(n_masks, dim=1).indices, value=True)
-
-        # masked tokens
-        masked_indices = self.mask_token_ids * torch.ones_like(
-            s, device=device
-        )  # (b n)
-        s_M = mask * s + (~mask) * masked_indices  # (b n); `~` reverses bool-typed data
-
-        # prediction
-        logits = self.transformer(
-            s_M.detach(), class_condition=y
+        logits, online_representation = self.online_transformer(
+            s_M_online.detach(), class_condition=y, return_representation=True
         )  # (b n codebook_size)
+
+        with torch.no_grad():
+            target_representation = self.target_transformer(
+                s_M_target.detach(), class_condition=y
+            )
+
         target = s  # (b n)
 
-        return logits, target
+        return logits, target, online_representation, target_representation
+
+    def create_masks(self, s, mask_token_ids):
+        t = np.random.uniform(0, 1)
+
+        n_masks = math.floor(self.gamma(t) * s.shape[1])
+        rand = torch.rand(s.shape, device=s.device)  # (b n)
+        mask = torch.zeros(s.shape, dtype=torch.bool, device=s.device)
+        mask.scatter_(dim=1, index=rand.topk(n_masks, dim=1).indices, value=True)
+
+        masked_indices = mask_token_ids * torch.ones_like(s, device=s.device)  # (b n)
+
+        s_M = mask * s + (~mask) * masked_indices  # (b n)
+
+        return s_M
+
+    def update_moving_average(self):
+        update_moving_average(
+            self.target_ema_updater, self.target_transformer, self.online_transformer
+        )
 
     def gamma_func(self, mode="cosine"):
         if mode == "linear":
@@ -244,21 +291,13 @@ class MaskGIT(nn.Module):
         guidance_scale: float,
         gamma: Callable,
         device,
-        stats: bool = False,
     ):
-
-        probs_array = []
-        s_array = []
-        entropy_array = []
-        selected_entropy_array = []
-
         for t in range(self.T):
-            logits = self.transformer(
+            logits = self.online_transformer(
                 s, class_condition=class_condition
             )  # (b n codebook_size) == (b n K)
-
             if isinstance(class_condition, torch.Tensor):
-                logits_null = self.transformer(s, class_condition=None)
+                logits_null = self.online_transformer(s, class_condition=None)
                 logits = logits_null + guidance_scale * (logits - logits_null)
 
             sampled_ids = torch.distributions.categorical.Categorical(
@@ -276,10 +315,6 @@ class MaskGIT(nn.Module):
             mask_ratio = gamma(ratio)
 
             probs = F.softmax(logits, dim=-1)  # convert logits into probs; (b n K)
-
-            # if examine:
-            #    probs_array.append(probs)
-
             selected_probs = torch.gather(
                 probs, dim=-1, index=sampled_ids.unsqueeze(-1)
             ).squeeze()  # get probability for the selected tokens; p(\hat{s}(t) | \hat{s}_M(t)); (b n)
@@ -307,33 +342,6 @@ class MaskGIT(nn.Module):
             # Masks tokens with lower confidence.
             s = torch.where(masking, self.mask_token_ids, sampled_ids)  # (b n)
 
-            if stats:
-                s_array.append(s)
-                probs_array.append(selected_probs)
-
-                # Filter out `inf` and `nan` values before entropy calculation
-                finite_probs = probs[torch.isfinite(probs)].view(
-                    probs.size(0), probs.size(1), -1
-                )  # Reshape back to original after filtering
-                finite_selected_probs = selected_probs[torch.isfinite(selected_probs)]
-
-                # Add a larger epsilon to avoid log(0)
-                epsilon = 1e-5
-
-                # Calculate entropy for finite probabilities only
-                entropy = -torch.sum(
-                    finite_probs * torch.log(finite_probs + epsilon), dim=-1
-                )
-                selected_entropy = -torch.sum(
-                    finite_selected_probs * torch.log(finite_selected_probs + epsilon),
-                    dim=-1,
-                )
-
-                entropy_array.append(entropy)
-                selected_entropy_array.append(selected_entropy)
-
-        if stats:
-            return s_array, probs_array, entropy_array, selected_entropy_array
         return s
 
     @torch.no_grad()
@@ -344,7 +352,6 @@ class MaskGIT(nn.Module):
         class_index=None,
         device="cpu",
         guidance_scale: float = 1.0,
-        stats: bool = False,
     ):
         """
         It performs the iterative decoding and samples token indices.
@@ -366,18 +373,6 @@ class MaskGIT(nn.Module):
             else None
         )  # (b 1)
 
-        if stats:
-            s_array, probs, entropy, sel_entropy = self.sample_good(
-                s,
-                unknown_number_in_the_beginning,
-                class_condition,
-                guidance_scale,
-                gamma,
-                device,
-                stats=True,
-            )
-            return (s_array, probs, entropy, sel_entropy)
-
         s = self.sample_good(
             s,
             unknown_number_in_the_beginning,
@@ -386,6 +381,7 @@ class MaskGIT(nn.Module):
             gamma,
             device,
         )
+
         return s
 
     def decode_token_ind_to_timeseries(
@@ -432,7 +428,7 @@ class MaskGIT(nn.Module):
         """
 
         mask_token_ids = self.mask_token_ids
-        transformer = self.transformer
+        transformer = self.online_transformer
         vq_model = self.vq_model
 
         # compute the confidence scores for s_T
@@ -536,7 +532,7 @@ class MaskGIT(nn.Module):
         device,
     ):
         mask_token_ids = self.mask_token_ids
-        transformer = self.transformer
+        transformer = self.online_transformer
         vq_model = self.vq_model
         choice_temperature = self.choice_temperature
 
