@@ -17,7 +17,7 @@ trainer_params:
     - 0
   max_epochs:
     stage1: 1 #000
-    stage2: 200 #1000 #1000 #10000
+    stage2: 100 #1000 #1000 #10000
 
 encoder:
   dim: 64
@@ -42,8 +42,8 @@ VQVAE:
   orthogonal_reg_weight: 0 #10
 
   # Additional hyperparameters for Two branch VQVAE with codebook decorrelation
-  recon_augmented_view_scale: 0.1
-  recon_original_view_scale: 0.9 #prioritize original view
+  recon_augmented_view_scale: 0.0
+  recon_original_view_scale: 1.0
 
   probe_test_per: 100
 
@@ -62,42 +62,23 @@ MaskGIT:
   # For the BYOL MaskGIT
   moving_average_decay: 0.99
 
-MAGE:
-  choice_temperature: 4 # for masking
-  stochastic_sampling: 1 # from (Lee et al., 2022)
-  T: 10
-  prior_model:
-    hidden_dim: 256
-    encoder_layers: 3 #3
-    decoder_layers: 2
-    heads: 2
-    ff_mult: 1
-    use_rmsnorm: True
-    p_unconditional: 0.2
-
-  mask_ratio:
-    min: 0.5
-    max: 1.0
-    mu: 0.55
-    std: 0.25
-
 class_guidance:
   guidance_scale: 1.
 
 SSL:
   stage1_method: "" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
-  stage1_weight: 0.01 # VibCReg: 0.1, BarlowTwins: 1, VICReg: 0.1
   stage2_method: "" #"barlowtwins" "vicreg", "vibcreg"
-  stage2_weight: 0.1
 
   # Hyperparameters for SSL methods.
   # These are the default values from the paper on CV-methods on Time series. Ref: Lee et al.
   barlowtwins:
+    weight: 1.0
     proj_hid: 4096 #projector hidden layer size
     proj_out: 4096 #projector output layer size
     lambda: 0.005
 
   vicreg:
+    weight: 0.01
     proj_hid: 4096 #projector hidden layer size
     proj_out: 4096 #projector output layer size
     lambda: 25 # sim_loss
@@ -105,6 +86,7 @@ SSL:
     nu: 1 # cov_loss
 
   vibcreg:
+    weight: 0.01
     proj_hid: 4096 #projector hidden layer size
     proj_out: 4096 #projector output layer size
     lambda: 25 # sim_loss
@@ -116,25 +98,35 @@ augmentations:
 
   time_augs:
     #- "noise"
-    - "amplitude_resize"
-    - "slope"
-    #- 'flip'
-    # - "noise_window"
+    #- "amplitude_resize"
+    #- "slope"
+    #- "flip"
+    #- "gaussian_noise"
+    #- noise_window
+    #- window_warp
+    #- magnitude_warp
+    - slice_and_shuffle
   timefreq_augs:
     #- "random_masks"
     #- "block"
     #- "band"
-    # "phase"
+    # - "phase"
     #- 'rotation'
-    # - "gaussian"
+    #- gaussian
     #- "shear"
     #- "scale"
 
   aug_params:
     n_fft: 32
+    window_ratio: 0.4
+    min_window_warp: 0.8
+    max_window_warp: 1.2
+    min_magnitude_warp: 0.8
+    max_magnitude_warp: 1.2
+    n_segments: 4
+
     #Time
-    noise_std: 0.01
-    noise_window_scale: 0.4
+    noise_std: 0.1
     AmpR_rate: 0.2
     slope_rate: 0.005
     #TimeFreq

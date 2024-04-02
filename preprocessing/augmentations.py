@@ -4,6 +4,7 @@ import torch
 import random
 from scipy.ndimage import rotate, affine_transform
 import torch.nn.functional as F
+import scipy
 
 
 class Augmenter(object):
@@ -64,11 +65,14 @@ class Augmenter(object):
 
 
 class TimeAugmenter(object):
-    def __init__(self, AmpR_rate, slope_rate, noise_std, noise_window_scale, **kwargs):
+    def __init__(
+        self, AmpR_rate, slope_rate, noise_std, window_ratio, n_segments, **kwargs
+    ):
         self.AmpR_rate = AmpR_rate
         self.slope_rate = slope_rate
         self.noise_std = noise_std
-        self.noise_window_scale = noise_window_scale
+        self.window_ratio = window_ratio
+        self.n_segments = n_segments
 
         # config method mapping:
         self.method_mapping = {
@@ -77,6 +81,10 @@ class TimeAugmenter(object):
             "slope": "add_slope",
             "jitter": "add_jitter",
             "noise_window": "add_noise_window",
+            "window_warp": "add_window_warp",
+            "magnitude_warp": "add_magnitude_warp",
+            "slice_and_shuffle": "add_slice_and_shuffle",
+            "gaussian_noise": "add_gaussian_noise",
         }
 
     def apply_augmentation(self, method_name, input):
@@ -136,21 +144,21 @@ class TimeAugmenter(object):
 
         return flipped_subx_views
 
-    def add_noise(self, *subx_views):
+    def add_gaussian_noise(self, *subx_views, mean=0, variance=0.01):
         """
-        Add random jitter (noise) to each data point in the input sequence.
+        Add Gaussian noise to the input sequences.
         """
-        jittered_subx_views = []
+        noise_subx_views = []
 
         for subx in subx_views:
-            jitter = np.random.normal(0, self.jitter_std, subx.shape)
-            jittered_subx = subx + jitter
-            jittered_subx_views.append(jittered_subx)
+            noise = np.random.normal(mean, np.sqrt(variance), subx.shape)
+            noise_subx = subx + noise
+            noise_subx_views.append(noise_subx)
 
-        if len(jittered_subx_views) == 1:
-            jittered_subx_views = jittered_subx_views[0]
+        if len(noise_subx_views) == 1:
+            noise_subx_views = noise_subx_views[0]
 
-        return jittered_subx_views
+        return noise_subx_views
 
     def add_slope(self, *subx_views):
         """
@@ -172,15 +180,6 @@ class TimeAugmenter(object):
         return sloped_subx_views
 
     def add_noise_window(self, *subx_views):
-        """
-        Add white noise within a random window of the input sequences.
-
-        Parameters:
-        - subx_views: Variable number of input sequences (subseq_len).
-
-        Returns:
-        - augmented_views: List of sequences with white noise added within a random window.
-        """
 
         augmented_views = []
 
@@ -188,7 +187,7 @@ class TimeAugmenter(object):
             subseq_len = subx.shape[0]
 
             # Randomly select a window within the sequence
-            window_size = int(subseq_len * self.noise_window_scale)
+            window_size = int(subseq_len * self.window_ratio)
             window_start = np.random.randint(0, subseq_len - window_size + 1)
             window_end = window_start + window_size
 
@@ -206,6 +205,99 @@ class TimeAugmenter(object):
 
         return augmented_views
 
+    def add_window_warp(self, *subx_views):
+        # reference https://github.com/AlexanderVNikitin/tsgm/blob/main/tsgm/models/augmentations.py
+
+        warped_views = []
+        window_ratio = self.window_ratio
+        scales = [0.1, 1.1]  # Define the scales for the warp
+
+        for subx in subx_views:
+            n_timesteps = subx.shape[0]
+            warp_size = max(np.round(window_ratio * n_timesteps).astype(np.int64), 1)
+            window_start = np.random.randint(low=0, high=n_timesteps - warp_size)
+            window_end = window_start + warp_size
+
+            # Select a random scale for the warp
+            scale = np.random.choice(scales)
+
+            # Apply the warp to the window
+            window_seg = np.interp(
+                np.linspace(0, warp_size - 1, num=int(warp_size * scale)),
+                np.arange(warp_size),
+                subx[window_start:window_end],
+            )
+
+            # Concatenate the start segment, warped window, and end segment
+            warped_subx = np.concatenate(
+                (subx[:window_start], window_seg, subx[window_end:])
+            )
+
+            # Interpolate the warped sequence back to its original length
+            warped_subx = np.interp(
+                np.arange(n_timesteps),
+                np.linspace(0, n_timesteps - 1, num=warped_subx.size),
+                warped_subx,
+            )
+
+            warped_views.append(warped_subx)
+
+        if len(warped_views) == 1:
+            warped_views = warped_views[0]
+
+        return warped_views
+
+    def add_magnitude_warp(self, *subx_views, sigma=0.1, n_knots=4):
+        # reference: https://github.com/AlexanderVNikitin/tsgm/blob/main/tsgm/models/augmentations.py
+
+        warped_views = []
+        for subx in subx_views:
+            n_timesteps = subx.shape[0]
+
+            # Generate the original and warp steps
+            orig_steps = np.arange(n_timesteps)
+            warp_steps = np.linspace(0, n_timesteps - 1, num=n_knots + 2)
+
+            # Generate a random warp for each feature
+            random_warps = np.random.normal(loc=1.0, scale=sigma, size=(n_knots + 2,))
+
+            # Apply the warp to each feature
+            warper = scipy.interpolate.CubicSpline(warp_steps, random_warps)(orig_steps)
+            warped_subx = subx * warper
+
+            warped_views.append(warped_subx)
+
+        if len(warped_views) == 1:
+            warped_views = warped_views[0]
+
+        return warped_views
+
+    def add_slice_and_shuffle(self, *subx_views):
+        """
+        Slice the input sequences into segments and shuffle them.
+        """
+        shuffled_subx_views = []
+        n_segments = self.n_segments
+
+        for subx in subx_views:
+            # Randomly pick n_segments-1 points where to slice
+            idxs = np.random.randint(0, subx.shape[0], size=n_segments - 1)
+            slices = []
+            start_idx = 0
+            for j in sorted(idxs):
+                s = subx[start_idx:j]
+                start_idx = j
+                slices.append(s)
+            slices.append(subx[start_idx:])
+            np.random.shuffle(slices)
+            shuffled_subx = np.concatenate(slices)
+            shuffled_subx_views.append(shuffled_subx)
+
+        if len(shuffled_subx_views) == 1:
+            shuffled_subx_views = shuffled_subx_views[0]
+
+        return shuffled_subx_views
+
 
 class TimeFreqAugmenter(object):
     def __init__(
@@ -221,7 +313,7 @@ class TimeFreqAugmenter(object):
         gaus_std=0.01,
         num_bands_to_remove=1,
         band_scale_factor=0.1,
-        phase_max_change=np.pi / 3,
+        phase_max_change=np.pi / 4,
         max_shear_x=0.1,
         max_shear_y=0.1,
         **kwargs,
@@ -267,7 +359,6 @@ class TimeFreqAugmenter(object):
             )
 
     def apply_augmentations(self, method_names, input):
-        X = input.copy()
         for method_name in method_names:
             input = self.apply_augmentation(method_name, input)
         return input
