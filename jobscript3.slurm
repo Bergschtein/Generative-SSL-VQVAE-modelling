@@ -1,16 +1,16 @@
 #!/bin/sh
 #SBATCH --account=ie-imf       # E.g. "ie-idi" if you belong to IE
-#SBATCH --job-name=codebook_analysis
+#SBATCH --job-name=SSL-VQVAE
 #SBATCH --time=3-00:00:00         # format: D-HH:MM:SS
 
 #SBATCH --partition=GPUQ          # Asking for a GPU
 #SBATCH --gres=gpu:1
-#SBATCH --mem=32G                 # Asking for 32GB RAM
+#SBATCH --mem=32G                 # Asking for 16GB RAM
 #SBATCH --nodes=1
 #SBATCH --output=output.txt      # Specifying 'stdout'
 #SBATCH --error=output.err        # Specifying 'stderr'
 
-#SBATCH --mail-user=johanvm@stud.ntnu.no
+#SBATCH --mail-user=erlendnl@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
@@ -25,4 +25,4 @@ module purge
 # Running your python file
 module load Anaconda3/2023.09-0
 conda activate master
-python experiments.py
+python experiments3.py
