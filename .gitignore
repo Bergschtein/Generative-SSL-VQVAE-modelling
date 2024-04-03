@@ -11,6 +11,7 @@ __pycache__/
 # custom
 data/UCRArchive_2018
 data/UCRArchive_2018/
+data/
 wandb/
 saved_models/
 notes/.obsidian
