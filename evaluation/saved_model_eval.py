@@ -38,6 +38,7 @@ class Evaluation(object):
     - visual inspection
     - PCA
     - t-SNE
+    - Conficence difference
     """
 
     def __init__(
@@ -48,12 +49,12 @@ class Evaluation(object):
         batch_size: int = 256,
     ):
         self.subset_dataset_name = subset_dataset_name
-        # self.device = torch.device(gpu_device_index)
+        self.device = torch.device(gpu_device_index)
         self.batch_size = batch_size
         self.config = config
 
         # load the pretrained FCN
-        self.fcn = load_pretrained_FCN(subset_dataset_name)
+        self.fcn = load_pretrained_FCN(subset_dataset_name).to(self.device)
         self.fcn.eval()
 
         # load the numpy matrix of the test samples
