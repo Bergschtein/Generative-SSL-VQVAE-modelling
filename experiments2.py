@@ -22,15 +22,6 @@ UCR_SUBSET = [
     # "ElectricDevices",
     # "StarLightCurves",
     # "Wafer",
-<<<<<<< HEAD:experiments.py
-    # "ECG5000",
-    # "TwoPatterns",
-    # "FordA",
-     "UWaveGestureLibraryAll",
-     "FordB",
-     "ChlorineConcentration",
-     "ShapesAll",
-=======
     "ECG5000",
     "TwoPatterns",
     "FordA",
@@ -38,19 +29,16 @@ UCR_SUBSET = [
     # "FordB",
     # "ChlorineConcentration",
     # "ShapesAll",
->>>>>>> 6b1123419d145393588e1298d25218a4df29d6e2:experiments2.py
-]
+    ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1
 # Controls
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 RUN_MINI_STAGE2 = True
-<<<<<<< HEAD:experiments.py
+
 SEED = 2
-=======
-SEED = 0
->>>>>>> 6b1123419d145393588e1298d25218a4df29d6e2:experiments2.py
+
 # Epochs:
 STAGE1_EPOCHS = 1000
 STAGE2_EPOCHS = 1000
