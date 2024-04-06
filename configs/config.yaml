@@ -66,7 +66,7 @@ class_guidance:
   guidance_scale: 1.
 
 SSL:
-  stage1_method: "vibcreg" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
+  stage1_method: #"vibcreg" #"vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
   stage2_method: "" #"barlowtwins" "vicreg", "vibcreg"
 
   # Hyperparameters for SSL methods.
