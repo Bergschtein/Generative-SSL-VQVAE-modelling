@@ -13,7 +13,6 @@ import torch
 from einops import repeat, rearrange
 from typing import Callable
 
-from labml_nn.sampling import Sampler
 
 from models.stage2.transformers import BidirectionalTransformer
 from models.stage1.encoder_decoder import VQVAEEncoder, VQVAEDecoder
@@ -399,9 +398,9 @@ class MaskGIT(nn.Module):
 
         vq_model = self.vq_model
         decoder = self.decoder
-        print(s, s.shape)
+        # print(s, s.shape)
         quantize = F.embedding(s, vq_model._codebook.embed)  # (b n d)
-        print(quantize, quantize.shape)
+        # print(quantize, quantize.shape)
         quantize = vq_model.project_out(quantize)  # (b n c)
 
         quantize = rearrange(quantize, "b n c -> b c n")  # (b c n) == (b c (h w))
@@ -618,7 +617,7 @@ class MaskGIT(nn.Module):
         self,
         num=1,
         mode="cosine",
-        p = 0.9,
+        p = 0.5,
         class_index=None,
         device="cpu",
         guidance_scale: float = 1.0,
@@ -678,17 +677,17 @@ class MaskGIT(nn.Module):
         guidance_scale: float,
         gamma: Callable,
         device,
-        #stats: bool = False,
+        stats: bool = False,
 
     ):
 
-        # probs_array = []
-        # s_array = []
-        # entropy_array = []
-        # selected_entropy_array = []
+        probs_array = []
+        s_array = []
+        entropy_array = []
+        selected_entropy_array = []
 
         #The last 
-        while unknown_number_in_the_beginning != 0:
+        while torch.sum(unknown_number_in_the_beginning) != 0:
             logits = self.transformer(
                 s, class_condition=class_condition
             )  # (b n codebook_size) == (b n K)
@@ -747,46 +746,46 @@ class MaskGIT(nn.Module):
 
             # Masks tokens with lower confidence.
             s = torch.where(masking, self.mask_token_ids, sampled_ids)  # (b n)
-            print(s)
+            # print(s)
 
             #Are there masked tokens? 
             unknown_number_in_the_beginning = torch.sum(
             s == self.mask_token_ids, dim=-1
             )
 
-        #     if stats:
-        #         s_array.append(s)
-        #         probs_array.append(selected_probs)
+            if stats:
+                s_array.append(s)
+                probs_array.append(selected_probs)
 
-        #         # Filter out `inf` and `nan` values before entropy calculation
-        #         finite_probs = probs[torch.isfinite(probs)].view(
-        #             probs.size(0), probs.size(1), -1
-        #         )  # Reshape back to original after filtering
-        #         finite_selected_probs = selected_probs[torch.isfinite(selected_probs)]
+                # Filter out `inf` and `nan` values before entropy calculation
+                finite_probs = probs[torch.isfinite(probs)].view(
+                    probs.size(0), probs.size(1), -1
+                )  # Reshape back to original after filtering
+                finite_selected_probs = selected_probs[torch.isfinite(selected_probs)]
 
-        #         # avoid log 0
-        #         epsilon = 1e-5
+                # avoid log 0
+                epsilon = 1e-5
 
-        #         # Calculate entropy for finite probabilities
-        #         entropy = -torch.sum(
-        #             finite_probs * torch.log(finite_probs + epsilon), dim=-1
-        #         )
-        #         selected_entropy = -torch.sum(
-        #             finite_selected_probs * torch.log(finite_selected_probs + epsilon),
-        #             dim=-1,
-        #         )
+                # Calculate entropy for finite probabilities
+                entropy = -torch.sum(
+                    finite_probs * torch.log(finite_probs + epsilon), dim=-1
+                )
+                selected_entropy = -torch.sum(
+                    finite_selected_probs * torch.log(finite_selected_probs + epsilon),
+                    dim=-1,
+                )
 
-        #         entropy_array.append(entropy)
-        #         selected_entropy_array.append(selected_entropy)
+                entropy_array.append(entropy)
+                selected_entropy_array.append(selected_entropy)
 
-        # if stats:
-        #     return s_array, probs_array, entropy_array, selected_entropy_array
+        if stats:
+            return s_array, probs_array, entropy_array, selected_entropy_array
         return s
 
 
 
 
-    def mask_by_random_nucleus(self, probs, p = 0.95, temperature=1.0, device="cpu"):
+    def mask_by_random_nucleus(self, probs, p, temperature=1.0, device="cpu"):
         """
         mask_len: (b 1)
         probs: (b n); also for the confidence scores
@@ -811,43 +810,38 @@ class MaskGIT(nn.Module):
 
 
         normalizing_const = torch.sum(probs[probs != torch.inf ])
-
         probs = probs / normalizing_const
         # Sort probabilities in descending order
         sorted_probs, indices = torch.sort(probs, dim=-1, descending=False)
         # Get the cumulative sum of probabilities in the sorted order
         cum_sum_probs = torch.cumsum(sorted_probs, dim=-1)
 
-        print(f"sorted probs {sorted_probs}")
-
 
         # Find the cumulative sums less than $p$.
         nucleus = cum_sum_probs < p
 
-        # print(f"nucleus {nucleus}")
-        # Prepend ones so that we add one token after the minimum number
-        # of tokens with cumulative probability less that $p$.
-        nucleus = torch.cat([nucleus.new_ones(nucleus.shape[:-1] + (1,)), nucleus[..., :-1]], dim=-1)
+        nr_of_unknown = torch.sum(probs != torch.inf, dim = -1)
+        nr_of_masked = torch.sum(nucleus, dim = -1)
 
 
-        
-        nr_of_masked = torch.sum(nucleus)
-        masking_ind = indices[-1][0:nr_of_masked]
+
+        #Ensures that we allways sample at least 1 token for each sample.
+        nr_of_masked = torch.where(
+            nr_of_masked == nr_of_unknown, nr_of_masked -1, nr_of_masked 
+        )
+
+
+        #Only the most conservative. Would like a better solution here
+        masking_ind = indices[:,0:torch.max(nr_of_masked)]
+
+        # print(f'nr_of_masked: {nr_of_masked} and min {torch.min(nr_of_masked)}')
 
         masking = torch.zeros_like(probs).to(device)  # (b n)
 
-        print(probs)
 
-        # When one unmasked token is left. Ensures that loop terminates.
-        if sorted_probs[-1][0] == 1.0 or sorted_probs[-1][0] > p: 
-            return masking.bool()
 
-        for i in masking_ind:
-            masking[-1][i] = 1
+        for i in range(masking_ind.shape[0]):
+            masking[i, masking_ind[i]] = 1.0
         masking = masking.bool()
-        # masking = ~masking
-        
-        
-        print(masking)
         return masking
     

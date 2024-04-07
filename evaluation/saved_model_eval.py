@@ -44,17 +44,16 @@ class Evaluation(object):
     def __init__(
         self,
         subset_dataset_name: str,
-        gpu_device_index: int,
         config: dict,
         batch_size: int = 256,
     ):
         self.subset_dataset_name = subset_dataset_name
-        self.device = torch.device(gpu_device_index)
+
         self.batch_size = batch_size
         self.config = config
 
         # load the pretrained FCN
-        self.fcn = load_pretrained_FCN(subset_dataset_name).to(self.device)
+        self.fcn = load_pretrained_FCN(subset_dataset_name)
         self.fcn.eval()
 
         # load the numpy matrix of the test samples
@@ -82,7 +81,7 @@ class Evaluation(object):
             **self.config["MaskGIT"],
             config=self.config,
             n_classes=n_classes,
-        ).to(self.device)
+        )
 
         # load
         fname = (
@@ -101,7 +100,7 @@ class Evaluation(object):
         # sampling
         if kind == "unconditional":
             x_new = unconditional_sample(
-                maskgit, n_samples, self.device, batch_size=self.batch_size
+                maskgit, n_samples, batch_size=self.batch_size
             )  # (b c l); b=n_samples, c=1 (univariate)
         elif kind == "conditional":
             x_new = conditional_sample(
@@ -130,7 +129,7 @@ class Evaluation(object):
 
             z_t = (
                 self.fcn(
-                    torch.from_numpy(self.X_test[s]).float().to(self.device),
+                    torch.from_numpy(self.X_test[s]).float(),
                     return_feature_vector=True,
                 )
                 .cpu()
@@ -138,7 +137,7 @@ class Evaluation(object):
                 .numpy()
             )
             z_g = (
-                self.fcn(X_gen[s].float().to(self.device), return_feature_vector=True)
+                self.fcn(X_gen[s].float(), return_feature_vector=True)
                 .cpu()
                 .detach()
                 .numpy()
@@ -168,7 +167,7 @@ class Evaluation(object):
         for i in range(n_iters):
             s = slice(i * self.batch_size, (i + 1) * self.batch_size)
 
-            p_yx_g = self.fcn(X_gen[s].float().to(self.device))  # p(y|x)
+            p_yx_g = self.fcn(X_gen[s].float())  # p(y|x)
             p_yx_g = torch.softmax(p_yx_g, dim=-1).cpu().detach().numpy()
 
             p_yx_gen.append(p_yx_g)
@@ -176,6 +175,26 @@ class Evaluation(object):
 
         IS_mean, IS_std = calculate_inception_score(p_yx_gen)
         return IS_mean, IS_std
+    
+    def visual_inspection(self, n_plot_samples: int, X_gen, ylim: tuple = (-5, 5)):
+        # `X_test`
+        sample_ind = np.random.randint(0, self.X_test.shape[0], n_plot_samples)
+        fig, axes = plt.subplots(2, 1, figsize=(4, 4))
+        for i in sample_ind:
+            axes[0].plot(self.X_test[i, 0, :], alpha=0.1)
+        axes[0].set_ylim(*ylim)
+        plt.grid()
+
+        # `X_gen`
+        sample_ind = np.random.randint(0, X_gen.shape[0], n_plot_samples)
+        for i in sample_ind:
+            axes[1].plot(X_gen[i, 0, :], alpha=0.1)
+        axes[1].set_ylim(*ylim)
+        plt.grid()
+
+        plt.tight_layout()
+        plt.show()
+        plt.close()
 
     def log_visual_inspection(self, n_plot_samples: int, X_gen, ylim: tuple = (-5, 5)):
         # `X_test`
