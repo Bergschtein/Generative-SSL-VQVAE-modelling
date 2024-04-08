@@ -72,6 +72,7 @@ class Evaluation(object):
         n_classes: int,
         kind: str,
         class_index: int = -1,
+        nucleus: bool = False
     ):
         assert kind in ["unconditional", "conditional"]
 
@@ -100,7 +101,7 @@ class Evaluation(object):
         # sampling
         if kind == "unconditional":
             x_new = unconditional_sample(
-                maskgit, n_samples, batch_size=self.batch_size
+                maskgit, n_samples, batch_size=self.batch_size, nucleus=nucleus
             )  # (b c l); b=n_samples, c=1 (univariate)
         elif kind == "conditional":
             x_new = conditional_sample(
@@ -214,6 +215,50 @@ class Evaluation(object):
 
         plt.tight_layout()
         wandb.log({"visual inspection": wandb.Image(plt)})
+        plt.close()
+
+    def pca(
+        self, n_plot_samples: int, X_gen, z_test: np.ndarray, z_gen: np.ndarray
+    ):
+        X_gen = X_gen.cpu().numpy()
+
+        sample_ind_test = np.random.choice(
+            range(self.X_test.shape[0]), size=n_plot_samples, replace=False
+        )
+        sample_ind_gen = np.random.choice(
+            range(X_gen.shape[0]), size=n_plot_samples, replace=False
+        )
+
+        # PCA: data space
+        pca = PCA(n_components=2)
+        X_embedded_test = pca.fit_transform(self.X_test.squeeze()[sample_ind_test])
+        X_embedded_gen = pca.transform(X_gen.squeeze()[sample_ind_gen])
+
+        plt.figure(figsize=(4, 4))
+        # plt.title("PCA in the data space")
+        plt.scatter(
+            X_embedded_test[:, 0], X_embedded_test[:, 1], alpha=0.1, label="test"
+        )
+        plt.scatter(X_embedded_gen[:, 0], X_embedded_gen[:, 1], alpha=0.1, label="gen")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        plt.close()
+
+        # PCA: latent space
+        pca = PCA(n_components=2)
+        z_embedded_test = pca.fit_transform(z_test.squeeze()[sample_ind_test].squeeze())
+        z_embedded_gen = pca.transform(z_gen[sample_ind_gen].squeeze())
+
+        plt.figure(figsize=(4, 4))
+        # plt.title("PCA in the representation space by the trained encoder");
+        plt.scatter(
+            z_embedded_test[:, 0], z_embedded_test[:, 1], alpha=0.1, label="test"
+        )
+        plt.scatter(z_embedded_gen[:, 0], z_embedded_gen[:, 1], alpha=0.1, label="gen")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
         plt.close()
 
     def log_pca(
