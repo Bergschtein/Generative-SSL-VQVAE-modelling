@@ -19,6 +19,7 @@ notes/.obsidian
 .slurm
 output.txt
 output.err
+results/
 
 # Distribution / packaging
 .Python

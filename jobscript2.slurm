@@ -10,7 +10,7 @@
 #SBATCH --output=output.txt      # Specifying 'stdout'
 #SBATCH --error=output.err        # Specifying 'stderr'
 
-#SBATCH --mail-user=erlendnl@stud.ntnu.no
+#SBATCH --mail-user=johanvm@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
@@ -25,4 +25,4 @@ module purge
 # Running your python file
 module load Anaconda3/2023.09-0
 conda activate master
-python experiments2.py
+python experiments_augs2.py
