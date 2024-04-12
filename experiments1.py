@@ -19,16 +19,16 @@ STAGE2_MINI_PROJECT_NAME = "Final-Stage2-Mini-Gaussian"
 STAGE1_EXPS = ["byol", "vibcreg", "barlowtwins"]  # empty string means regular VQVAE
 # Datasets to run experiments on
 UCR_SUBSET = [
-    # "ElectricDevices",
-    # "StarLightCurves",
-    # "Wafer",
-    # "ECG5000",
-    # "TwoPatterns",
-    "FordA",
-    "UWaveGestureLibraryAll",
-    "FordB",
-    "ChlorineConcentration",
-    "ShapesAll",
+    "ElectricDevices",
+    "StarLightCurves",
+    "Wafer",
+    "ECG5000",
+    "TwoPatterns",
+    # "FordA",
+    # "UWaveGestureLibraryAll",
+    # "FordB",
+    # "ChlorineConcentration",
+    # "ShapesAll",
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1
@@ -149,7 +149,6 @@ def run_experiments():
                 stage1_exp = f"{stage1_exp}-" if stage1_exp != "" else ""
                 decorr = "decorr-" if experiment["orthogonal_reg_weight"] > 0 else ""
                 recon_rate = experiment["aug_recon_rate"]
-                print(f"Recon rate: {recon_rate}")
                 aug_recons = f"aug_recons_{recon_rate}-" if recon_rate > 0 else ""
                 stage = "stage1" if experiment["stage"] == 1 else "stage2"
                 mini = "-mini" if experiment["epochs"] == STAGE2_MINI_EPOCHS else ""
