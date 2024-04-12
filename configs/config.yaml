@@ -99,7 +99,7 @@ SSL:
     weight: 1.0
     proj_hid: 512
     proj_out: 512
-    momentum: 0.96
+    momentum: 0.9
 
 augmentations:
   use_all_methods: True
@@ -107,23 +107,23 @@ augmentations:
   time_augs:
     #- "noise"
     #- "random_crop"
-    # - "amplitude_resize"
-    - "slope"
-    # - "flip"
-    # - "gaussian_noise"
-    # - noise_window
-    # - window_warp
-    # - magnitude_warp
-    # - "slice_and_shuffle"
+    #- "amplitude_resize"
+    #- "slope"
+    #- "flip"
+    #- "gaussian_noise"
+    #- noise_window
+    #- window_warp
+    #- magnitude_warp
+    #- "slice_and_shuffle"
   timefreq_augs:
-    # - "random_masks"
-    - "block" #Could be interesting
-    # - "band" #Buggy??
-    # - "phase" #Amplitude shrink?
-    # - 'rotation' #Very hard and wierd
-    # - gaussian #Does not do much
-    # - "shear" #Wierd end point artifacts 
-    # - "scale"
+    #- "random_masks"
+    - "block"
+    #- "band"
+    #- "phase"
+    #- 'rotation'
+    #- gaussian
+    #- "shear"
+    #- "scale"
 
   aug_params:
     n_fft: 32

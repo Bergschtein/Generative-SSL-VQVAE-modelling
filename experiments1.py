@@ -16,9 +16,7 @@ STAGE1_PROJECT_NAME = "S1-Aug-Slice&Shuffle"
 STAGE2_PROJECT_NAME = "S2-vibcreg-adjust"
 STAGE2_MINI_PROJECT_NAME = "Final-Stage2-Mini-Gaussian"
 # Stage 1 experiments to run
-STAGE1_EXPS = [
-    "byol" , "vibcreg", "barlowtwins"
-    ]  # empty string means regular VQVAE
+STAGE1_EXPS = ["byol", "vibcreg", "barlowtwins"]  # empty string means regular VQVAE
 # Datasets to run experiments on
 UCR_SUBSET = [
     # "ElectricDevices",
@@ -150,11 +148,13 @@ def run_experiments():
                 stage1_exp = experiment["stage1_exp"]
                 stage1_exp = f"{stage1_exp}-" if stage1_exp != "" else ""
                 decorr = "decorr-" if experiment["orthogonal_reg_weight"] > 0 else ""
-                aug_recons = f"aug_recons_{experiment['aug_recon_rate']}-" if experiment["aug_recon_rate"] > 0 else ""
+                recon_rate = experiment["aug_recon_rate"]
+                print(f"Recon rate: {recon_rate}")
+                aug_recons = f"aug_recons_{recon_rate}-" if recon_rate > 0 else ""
                 stage = "stage1" if experiment["stage"] == 1 else "stage2"
                 mini = "-mini" if experiment["epochs"] == STAGE2_MINI_EPOCHS else ""
                 seed = f"-seed{SEED}"
-                run_name = "".join([decorr,aug_recons, stage1_exp, stage, mini, seed])
+                run_name = "".join([decorr, aug_recons, stage1_exp, stage, mini, seed])
 
                 # Set correct data loader
                 if experiment["stage"] == 1:
