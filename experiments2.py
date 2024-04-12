@@ -12,8 +12,8 @@ from trainers.train_maskgit import train_maskgit
 import torch
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "Final-Stage1-Gaussian"
-STAGE2_PROJECT_NAME = "Final-Stage2-Gaussian"
+STAGE1_PROJECT_NAME = "S1-vibcreg-adjust"
+STAGE2_PROJECT_NAME = "S2-vibcreg-adjust"
 STAGE2_MINI_PROJECT_NAME = "Final-Stage2-Mini-Gaussian"
 # Stage 1 experiments to run
 STAGE1_EXPS = [
@@ -37,10 +37,8 @@ NUM_RUNS_PER = 1
 # Controls
 RUN_STAGE1 = True
 RUN_STAGE2 = True
-RUN_MINI_STAGE2 = True
-
-SEED = 2
-
+RUN_MINI_STAGE2 = False
+SEED = 0
 # Epochs:
 STAGE1_EPOCHS = 1000
 STAGE2_EPOCHS = 1000
@@ -58,8 +56,6 @@ def run_experiments():
     config["trainer_params"]["max_epochs"]["stage1"] = STAGE1_EPOCHS
     config["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
     # Only reconstruct original view:
-    config["VQVAE"]["recon_augmented_view_scale"] = 0.0
-    config["VQVAE"]["recon_original_view_scale"] = 1.0
 
     batch_size_stage1 = config["dataset"]["batch_sizes"]["stage1"]
     batch_size_stage2 = config["dataset"]["batch_sizes"]["stage2"]

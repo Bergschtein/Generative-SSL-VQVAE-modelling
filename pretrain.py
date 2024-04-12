@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 
 from trainers.train_vqvae import train_vqvae
 from trainers.train_ssl_vqvae import train_ssl_vqvae
-from trainers.train_byol_maskgit import train_byol_maskgit
 from trainers.train_maskgit import train_maskgit
 import torch
 
@@ -59,15 +58,26 @@ if __name__ == "__main__":
     batch_size = config["dataset"]["batch_sizes"]["stage1"]
 
     train_data_loader = build_data_pipeline(
-        batch_size, dataset_importer, config, augment=False, kind="train"
+        batch_size,
+        dataset_importer,
+        config,
+        augment=False,
+        kind="train",
     )
-
     train_data_loader_aug = build_data_pipeline(
-        batch_size, dataset_importer, config, augment=True, kind="train"
+        batch_size,
+        dataset_importer,
+        config,
+        augment=True,
+        kind="train",
     )
 
     test_data_loader = build_data_pipeline(
-        batch_size, dataset_importer, config, augment=False, kind="test"
+        batch_size,
+        dataset_importer,
+        config,
+        augment=False,
+        kind="test",
     )
 
     wandb_project = "codebook analysis"
@@ -95,14 +105,6 @@ if __name__ == "__main__":
             torch_seed=0,
         )
 
-    elif args.model == "byolmaskgit":
-        train_byol_maskgit(
-            config,
-            train_data_loader,
-            test_data_loader,
-            do_validate=True,
-            gpu_device_idx=args.gpu_device_idx,
-        )
     elif args.model == "maskgit":
         train_maskgit(
             config,

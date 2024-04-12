@@ -3,6 +3,41 @@ import os
 from tqdm import tqdm
 import wandb
 
+filters = {
+    "regular": {
+        "config.SSL.stage1_method": "",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+    },
+    "regular-decorr": {
+        "config.SSL.stage1_method": "",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+    },
+    "vibcreg": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+    },
+    "vibcreg-decorr": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+    },
+    "barlowtwins": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+    },
+    "barlowtwins-decorr": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+    },
+    "byol": {
+        "config.SSL.stage1_method": "byol",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+    },
+    "byol-decorr": {
+        "config.SSL.stage1_method": "byol",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+    },
+}
+
 
 def wandb_stage1_scan_to_csv(wandb_stage1_project, dataset, api=wandb.Api()):
     # Metrics we're interested in logging
@@ -18,41 +53,6 @@ def wandb_stage1_scan_to_csv(wandb_stage1_project, dataset, api=wandb.Api()):
         "val_loss",
         "training_time",
     ]
-
-    filters = {
-        "regular": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "regular-decorr": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "vibcreg": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "vibcreg-decorr": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "barlowtwins": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "barlowtwins-decorr": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "byol": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "byol-decorr": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-    }
 
     # Ensure the dataset name is included in each filter
     for f in filters.values():
@@ -100,41 +100,6 @@ def wandb_stage1_summary_to_csv(wandb_stage1_project, dataset, api=wandb.Api()):
         "training_time",
     ]
 
-    filters = {
-        "regular": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "regular-decorr": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "vibcreg": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "vibcreg-decorr": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "barlowtwins": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "barlowtwins-decorr": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "byol": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "byol-decorr": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-    }
-
     # Ensure the dataset name is included in each filter
     for f in filters.values():
         f["config.dataset.dataset_name"] = dataset
@@ -179,41 +144,6 @@ def wandb_stage2_scans_to_csv(wandb_stage2_project, dataset, api=wandb.Api()):
         "variety (Gini)",
     ]
 
-    filters = {
-        "regular": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "regular-decorr": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "vibcreg": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "vibcreg-decorr": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "barlowtwins": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "barlowtwins-decorr": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "byol": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "byol-decorr": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-    }
-
     # Ensure the dataset name is included in each filter
     for f in filters.values():
         f["config.dataset.dataset_name"] = dataset
@@ -257,41 +187,6 @@ def wandb_stage2_summary_to_csv(wandb_stage2_project, dataset, api=wandb.Api()):
         "skewness",
         "variety (Gini)",
     ]
-
-    filters = {
-        "regular": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "regular-decorr": {
-            "config.SSL.stage1_method": "",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "vibcreg": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "vibcreg-decorr": {
-            "config.SSL.stage1_method": "vibcreg",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "barlowtwins": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "barlowtwins-decorr": {
-            "config.SSL.stage1_method": "barlowtwins",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-        "byol": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 0,
-        },
-        "byol-decorr": {
-            "config.SSL.stage1_method": "byol",
-            "config.VQVAE.orthogonal_reg_weight": 10,
-        },
-    }
 
     # Ensure the dataset name is included in each filter
     for f in filters.values():

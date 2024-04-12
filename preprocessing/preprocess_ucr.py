@@ -94,7 +94,9 @@ class UCRDataset(Dataset):
 
     def getitem_default(self, idx):
         x, y = self.X[idx, :], self.Y[idx, :]
+
         x = x[None, :]  # adds a channel dim
+
         return x, y
 
     def __getitem__(self, idx):
@@ -104,16 +106,12 @@ class UCRDataset(Dataset):
         return self._len
 
 
-import matplotlib.pyplot as plt
-
-
 class AugUCRDataset(Dataset):
     def __init__(
         self,
         kind: str,
         dataset_importer: UCRDatasetImporter,
         augmenter: Augmenter,
-        n_pairs: int,
         **kwargs,
     ):
         """
@@ -126,7 +124,6 @@ class AugUCRDataset(Dataset):
         super().__init__()
         self.kind = kind
         self.augmenter = augmenter
-        self.n_pairs = n_pairs
 
         if kind == "train":
             self.X, self.Y = dataset_importer.X_train, dataset_importer.Y_train

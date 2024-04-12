@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 
 from models.stage1.encoder_decoder import VQVAEEncoder, VQVAEDecoder
 from models.stage1.vq import VectorQuantize
-from models.ssl import assign_ssl_method
 
 from utils import (
     compute_downsample_rate,
-    encode_data,
     time_to_timefreq,
     timefreq_to_time,
     quantize,
@@ -26,9 +24,6 @@ import torch
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import wandb
-from sklearn.manifold import TSNE
-from umap import UMAP
-import seaborn as sns
 from torch import nn
 
 
@@ -47,7 +42,7 @@ class MLPHead(nn.Module):
         return self.net(z)
 
 
-class ByolNetwork(nn.Module):
+class ByolNetWrapper(nn.Module):
     def __init__(self, encoder, projector):
         super().__init__()
 
@@ -119,6 +114,7 @@ class Exp_BYOL_VQVAE(ExpBase):
         downsampled_rate = compute_downsample_rate(
             input_length, self.n_fft, downsampled_width
         )
+        self.aug_recon_rate = config["VQVAE"]["aug_recon_rate"]
 
         # encoder
         self.encoder = VQVAEEncoder(
@@ -131,7 +127,7 @@ class Exp_BYOL_VQVAE(ExpBase):
 
         self.projector = MLPHead(2 * dim, **config["SSL"]["byol"])
 
-        self.online_network = ByolNetwork(self.encoder, self.projector)
+        self.online_network = ByolNetWrapper(self.encoder, self.projector)
 
         self.target_network = copy.deepcopy(self.online_network)
         self.initializes_target_network()
@@ -191,81 +187,81 @@ class Exp_BYOL_VQVAE(ExpBase):
         # using one branch if validation step.
 
         if training:
-            (x, x_aug_view), y = batch  # x and augmented view
+            (x_orig, x_aug), y = batch  # x and augmented view
         else:
-            x, y = batch
+            x_orig, y = batch
 
-        recons_loss = {
-            "orig.time": 0.0,
-            "orig.timefreq": 0.0,
-            "aug.time": 0.0,
-            "aug.timefreq": 0.0,
-        }
-
+        recons_loss = {"time": 0.0, "timefreq": 0.0}
         vq_loss = None
         perplexity = 0.0
-        codebook_decorr_loss = 0.0
         reg_loss = 0.0
 
-        C = x.shape[1]
+        C = x_orig.shape[1]
 
-        # --- Processing original view ---
-        u = time_to_timefreq(x, self.n_fft, C)
+        u_orig = time_to_timefreq(x_orig, self.n_fft, C)  # STFT
 
         if not self.decoder.is_upsample_size_updated:
-            self.decoder.register_upsample_size(torch.IntTensor(np.array(u.shape[2:])))
+            self.decoder.register_upsample_size(
+                torch.IntTensor(np.array(u_orig.shape[2:]))
+            )
 
-        z_orig_view, z_proj_orig_view = self.online_network(u)
+        z_orig, z_orig_proj = self.online_network(u_orig)
 
-        z_q, indices, vq_loss, perplexity = quantize(z_orig_view, self.vq_model)
-        uhat = self.decoder(z_q)
-        xhat = timefreq_to_time(uhat, self.n_fft, C)
-        x, xhat = shape_match(x, xhat)
-
-        # losses
-        recons_loss["orig.time"] = F.mse_loss(x, xhat)
-        recons_loss["orig.timefreq"] = F.mse_loss(u, uhat)
-
-        # --- Processing alternate view with SSL ---
         if training:
-            u_aug_view = time_to_timefreq(x_aug_view, self.n_fft, C)  # STFT
+            u_aug = time_to_timefreq(x_aug, self.n_fft, C)
 
-            _, z_aug_projected = self.online_network(u_aug_view)
+            z_aug, z_aug_proj = self.online_network(u_aug)
 
-            orig_prediction = self.predictor(z_proj_orig_view)
-            aug_prediction = self.predictor(z_aug_projected)
+            orig_prediction = self.predictor(z_orig_proj)
+            aug_prediction = self.predictor(z_aug_proj)
 
             with torch.no_grad():
-                _, z_target_orig_projected = self.target_network(u)  # Encode
-                _, z_target_aug_projected = self.target_network(u_aug_view)  # Encode
+                _, z_target_orig_projected = self.target_network(u_orig)  # Encode
+                _, z_target_aug_projected = self.target_network(u_aug)  # Encode
 
             reg_loss += self.regression_loss(orig_prediction, z_target_orig_projected)
             reg_loss += self.regression_loss(aug_prediction, z_target_aug_projected)
             reg_loss = reg_loss.mean()
+
+        recon_aug = np.random.uniform(0, 1) < self.aug_recon_rate
+        x = x_aug if (recon_aug and training) else x_orig
+        u = u_aug if (recon_aug and training) else u_orig
+        z = z_aug if (recon_aug and training) else z_orig
+
+        z_q, _, vq_loss, perplexity = quantize(z, self.vq_model)
+        uhat = self.decoder(z_q)
+        xhat = timefreq_to_time(uhat, self.n_fft, C)
+        x, xhat = shape_match(x, xhat)
+
+        recons_loss["time"] = F.mse_loss(xhat, x)
+        recons_loss["timefreq"] = F.mse_loss(uhat, u)
+
         # plot both views and reconstruction
         r = np.random.uniform(0, 1)
 
         if r < 0.01 and training:
-            b = np.random.randint(0, x.shape[0])
-            c = np.random.randint(0, x.shape[1])
+            b = np.random.randint(0, x_orig.shape[0])
+            c = np.random.randint(0, x_orig.shape[1])
             fig, ax = plt.subplots()
             plt.suptitle(f"ep_{self.current_epoch}")
 
             ax.plot(
                 x[b, c].cpu(),
                 label=f"original",
-                c="gray",
-                alpha=1,
+                c="blue",
+                alpha=0.5,
             )
             ax.plot(
-                x_aug_view[b, c].cpu(),
+                x_aug[b, c].cpu(),
                 label=f"augmented view",
                 c="gray",
-                alpha=0.3,
+                alpha=0.5,
             )
+            text = "augmented" if recon_aug else "original"
             ax.plot(
                 xhat[b, c].detach().cpu(),
-                label=f"reconstruction of original view",
+                c="red",
+                label=f"reconstruction of {text} view",
             )
             ax.set_title("x")
             ax.set_ylim(-5, 5)
@@ -284,20 +280,10 @@ class Exp_BYOL_VQVAE(ExpBase):
         # forward:
         recons_loss, vq_loss, perplexity, reg_loss = self.forward(x, training=True)
         # --- Total Loss ---
-        loss = (
-            (
-                recons_loss["orig.time"]
-                + recons_loss["orig.timefreq"]
-                + recons_loss["aug.time"]
-                + recons_loss["aug.timefreq"]
-            )
-            + vq_loss["loss"]
-            + reg_loss
-        )
 
-        # lr scheduler
-        sch = self.lr_schedulers()
-        sch.step()
+        loss = (
+            recons_loss["time"] + recons_loss["timefreq"] + vq_loss["loss"] + reg_loss
+        )
 
         self.manual_backward(loss)
         opt.step()
@@ -305,18 +291,18 @@ class Exp_BYOL_VQVAE(ExpBase):
         # update target encoder
         self._update_target_network_parameters()
 
+        sch = self.lr_schedulers()
+        sch.step()
+
         # log
         loss_hist = {
             "loss": loss,
             "commit_loss": vq_loss["commit_loss"],
-            #'commit_loss': vq_loss, #?
             "perplexity": perplexity,
             "byol_regression_loss": reg_loss,
-            "recons_loss.time": recons_loss["orig.time"] + recons_loss["aug.time"],
-            "recons_loss.timefreq": recons_loss["orig.timefreq"]
-            + recons_loss["aug.timefreq"],
-            "recons_loss.orig": recons_loss["orig.time"] + recons_loss["orig.timefreq"],
-            "recons_loss.aug": recons_loss["aug.time"] + recons_loss["aug.timefreq"],
+            "recons_loss.time": recons_loss["time"],
+            "recons_loss.timefreq": recons_loss["timefreq"],
+            "recons_loss.orig": recons_loss["time"] + recons_loss["timefreq"],
             "orthogonal_reg_loss": vq_loss["orthogonal_reg_loss"],
             "vq_loss": vq_loss["loss"],
         }
@@ -331,20 +317,16 @@ class Exp_BYOL_VQVAE(ExpBase):
         recons_loss, vq_loss, perplexity, _ = self.forward(x, training=False)
 
         # only VQVAE loss
-        loss = recons_loss["orig.time"] + recons_loss["orig.timefreq"] + vq_loss["loss"]
+        loss = recons_loss["time"] + recons_loss["timefreq"] + vq_loss["loss"]
 
         # log
         val_loss_hist = {
             "val_loss": loss,
             #'commit_loss': vq_loss, #?
+            "val_recon_loss": recons_loss["time"] + recons_loss["timefreq"],
             "val_perplexity": perplexity,
-            "val_recons_loss.time": recons_loss["orig.time"] + recons_loss["aug.time"],
-            "val_recons_loss.timefreq": recons_loss["orig.timefreq"]
-            + recons_loss["aug.timefreq"],
-            "val_recons_loss.orig": recons_loss["orig.time"]
-            + recons_loss["orig.timefreq"],
-            "val_recons_loss.aug": recons_loss["aug.time"]
-            + recons_loss["aug.timefreq"],
+            "val_recons_loss.time": recons_loss["time"],
+            "val_recons_loss.timefreq": recons_loss["timefreq"],
         }
 
         detach_the_unnecessary(val_loss_hist)
@@ -356,7 +338,7 @@ class Exp_BYOL_VQVAE(ExpBase):
         opt = torch.optim.AdamW(
             [
                 {
-                    "params": self.encoder.parameters(),
+                    "params": self.online_network.parameters(),
                     "lr": self.config["exp_params"]["LR"],
                 },
                 {
