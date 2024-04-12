@@ -19,23 +19,16 @@ STAGE2_MINI_PROJECT_NAME = "Final-Stage2-Mini-Gaussian"
 STAGE1_EXPS = ["byol", "vibcreg", "barlowtwins"]  # empty string means regular VQVAE
 # Datasets to run experiments on
 UCR_SUBSET = [
-    # "ElectricDevices",
-    # # "StarLightCurves",
-    # "Wafer",
-    # "ECG5000",
+    "ElectricDevices",
+    # "StarLightCurves",
+    "Wafer",
+    "ECG5000",
     # "TwoPatterns",
     # "FordA",
-    "UWaveGestureLibraryAll",
+    # "UWaveGestureLibraryAll",
     # # "FordB",
-    "ChlorineConcentration",
-    "ShapesAll",
-    # "ECG5000",
-    # "TwoPatterns",
-    # "FordA",
-    "UWaveGestureLibraryAll",
-    # # "FordB",
-    "ChlorineConcentration",
-    "ShapesAll",
+    # "ChlorineConcentration",
+    # "ShapesAll",
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1
@@ -46,7 +39,6 @@ RUN_MINI_STAGE2 = False
 SEED = 2
 # Epochs:
 STAGE1_EPOCHS = 250  # 1000
-STAGE1_EPOCHS = 250    # 1000
 STAGE2_EPOCHS = 1000
 STAGE2_MINI_EPOCHS = 100
 
@@ -63,8 +55,6 @@ def run_experiments():
     config["trainer_params"]["max_epochs"]["stage1"] = STAGE1_EPOCHS
     config["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
     # Only reconstruct original view:
-
-    config["augmentations"]["time_augs"] = STAGE1_AUGS
 
     config["augmentations"]["time_augs"] = STAGE1_AUGS
 
@@ -162,12 +152,10 @@ def run_experiments():
                 decorr = "decorr-" if experiment["orthogonal_reg_weight"] > 0 else ""
                 recon_rate = experiment["aug_recon_rate"]
                 aug_recons = f"aug_recons_{recon_rate}-" if recon_rate > 0 else ""
-                aug_recons = f"aug_recons_{experiment['aug_recon_rate']}-" if experiment["aug_recon_rate"] > 0 else ""
                 stage = "stage1" if experiment["stage"] == 1 else "stage2"
                 mini = "-mini" if experiment["epochs"] == STAGE2_MINI_EPOCHS else ""
                 seed = f"-seed{SEED}"
                 run_name = "".join([decorr, aug_recons, stage1_exp, stage, mini, seed])
-                run_name = "".join([decorr,aug_recons, stage1_exp, stage, mini, seed])
 
                 # Set correct data loader
                 if experiment["stage"] == 1:
