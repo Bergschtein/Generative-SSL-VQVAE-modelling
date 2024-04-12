@@ -20,6 +20,8 @@ notes/.obsidian
 output.txt
 output.err
 results/
+results
+results - Gaussian augs/
 
 # Distribution / packaging
 .Python

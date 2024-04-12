@@ -5,6 +5,10 @@ from preprocessing.data_pipeline import build_data_pipeline
 from preprocessing.augmentations import Augmenter
 from models.stage2.maskgit import MaskGIT
 
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MinMaxScaler
+from sklearn import metrics
 
 import os
 from pathlib import Path
@@ -78,7 +82,7 @@ class Examiner():
 
     def augment_samples(self,n_samples):
         dataset = self.current_dataset
-        
+
         X = self.loader_dict[dataset][0].dataset.X
         Y = self.loader_dict[dataset][0].dataset.Y
         random_samples = np.random.choice(X.shape[0], n_samples)
@@ -152,7 +156,7 @@ class Examiner():
     def PCA_latent(self, z, y, train = True):
         # Label to color dict (automatic)
         label_color_dict = {label:idx for idx,label in enumerate(np.unique(y))}
-
+        z = F.adaptive_avg_pool2d(z, (1, 1)).squeeze(-1).squeeze(-1)
         # Color vector creation
         cvec = [label_color_dict[label.tolist()] for label in y]
 
@@ -160,14 +164,25 @@ class Examiner():
         z_pca = pca.fit_transform(z)
         plt.figure(figsize=(4, 4))
         plt.scatter(
-            z_pca[:, 0], z_pca[:, 1],c=cvec, alpha=0.1, label = "Train"
+            z_pca[:, 0], z_pca[:, 1],c=cvec, alpha=0.1
         )
-        # plt.scatter(z_embedded_gen[:, 0], z_embedded_gen[:, 1], alpha=0.1, label="gen")
+
         plt.legend()
         plt.tight_layout()
         plt.show()
         plt.close()
 
+    def TSNE_latents(self, z,y):
+        z = F.adaptive_avg_pool2d(z, (1, 1)).squeeze(-1).squeeze(-1)
+        z_tsne = TSNE(
+            n_components=2, learning_rate="auto", init="random"
+        ).fit_transform(z)
+
+        plt.figure(figsize=(4, 4))
+        plt.scatter(z_tsne[:, 0], z_tsne[:, 1], c=y, alpha=0.1)
+        plt.legend()
+        plt.show()
+        plt.close()
 
     def load_models(self, dataset, ssl_method = "", decorr = False):
             self.current_dataset = dataset
@@ -200,19 +215,21 @@ class Examiner():
             self.vq_model = self.maskgit.vq_model
 
     def get_latents(self, dataset, train = True):
-        if train:
-            dataloader = self.loader_dict[dataset][0]
-        else:
-            dataloader = self.loader_dict[dataset][1]
+        train_dataloader = self.loader_dict[dataset][0]
+        test_dataloader = self.loader_dict[dataset][1]
 
         n_fft = self.config['VQVAE']['n_fft'] 
 
-        z_encoded, ys, counts = encode_data(dataloader, self.encoder, n_fft)
+        z_tr, y_tr, counts = encode_data(train_dataloader, self.encoder, n_fft)
+        z_te, y_te, counts = encode_data(test_dataloader, self.encoder, n_fft)
+        z_tr = z_tr.squeeze()
+        y_tr = y_tr.squeeze() 
+        z_te = z_te.squeeze()
+        y_te = y_te.squeeze() 
+        # z_encoded = z_encoded.squeeze()
+        # ys = ys.squeeze()
 
-        z_encoded = z_encoded.squeeze()
-        ys = ys.squeeze()
-
-        return z_encoded, ys
+        return z_tr, y_tr, z_te, y_te
 
 
 def encode_data(
@@ -265,3 +282,24 @@ def encode_data(
         z_encoded = F.adaptive_avg_pool2d(z_encoded, (1, 1)).squeeze(-1).squeeze(-1)
 
     return z_encoded, ys, counts
+
+def probes(x_tr, x_ts, y_tr, y_ts):
+    scaler = MinMaxScaler(feature_range=(-1, 1)).fit(x_tr)
+    x_tr = scaler.transform(x_tr)
+    x_ts = scaler.transform(x_ts)
+    y_tr = y_tr.flatten()
+    y_ts = y_ts.flatten()
+
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(x_tr, y_tr)
+    preds_knn = knn.predict(x_ts)
+
+    svm = SVC(kernel="linear")
+    svm.fit(x_tr, y_tr)
+    preds_svm = svm.predict(x_ts)
+
+    scores = {
+        "knn_accuracy": metrics.accuracy_score(y_ts, preds_knn),
+        "svm_accuracy": metrics.accuracy_score(y_ts, preds_svm),
+    }
+    return scores
