@@ -10,7 +10,7 @@
 #SBATCH --output=output.txt      # Specifying 'stdout'
 #SBATCH --error=output.err        # Specifying 'stderr'
 
-#SBATCH --mail-user=erlendnl@stud.ntnu.no
+#SBATCH --mail-user=johanvm@stud.ntnu.no
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
