@@ -39,12 +39,13 @@ NUM_RUNS_PER = 1
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEED = 1
+SEED = 4
 # Epochs:
 STAGE1_EPOCHS = 1000  # 1000
 STAGE2_EPOCHS = 1000
 
 STAGE1_AUGS = ["window_warp", "amplitude_resize"]
+
 
 # Main experiment function
 def run_experiments():
