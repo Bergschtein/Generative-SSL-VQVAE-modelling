@@ -39,12 +39,17 @@ NUM_RUNS_PER = 1
 RUN_STAGE1 = True
 RUN_STAGE2 = False
 
-SEED = 1
+SEED = 5
 # Epochs:
 STAGE1_EPOCHS = 250  # 1000
 STAGE2_EPOCHS = 1000
 
-STAGE1_AUGS = ["amplitude_resize", "window_warp", "gaussian_noise", "slice_and_shuffle"]
+# STAGE1_AUGS = ["amplitude_resize", "window_warp", "gaussian_noise", "slice_and_shuffle"]
+STAGE1_AUGS = [["amplitude_resize", "window_warp", "gaussian_noise", "slice_and_shuffle"],
+               ["amplitude_resize", "window_warp", "gaussian_noise"],
+               ["amplitude_resize", "window_warp"],
+               ["amplitude_resize"]
+               ]
 
 
 # Main experiment function
@@ -59,7 +64,7 @@ def run_experiments():
     config["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
     # Only reconstruct original view:
 
-    config["augmentations"]["time_augs"] = STAGE1_AUGS
+    # config["augmentations"]["time_augs"] = STAGE1_AUGS
 
     config["seed"] = SEED
     config["id"] = generate_short_id(
@@ -81,12 +86,15 @@ def run_experiments():
                 "augmented_data": (exp != ""),
                 "orthogonal_reg_weight": ortho_reg,
                 "project_name": STAGE1_PROJECT_NAME,
+                "augmentations": augs,
                 "epochs": STAGE1_EPOCHS,
                 "train_fn": train_vqvae if exp == "" else train_ssl_vqvae,
                 "full_embed": False,
             }
+            for augs in STAGE1_AUGS
             for ortho_reg in [0, 10]
             for exp in STAGE1_EXPS
+
         ]
 
     if RUN_STAGE2:
@@ -134,7 +142,7 @@ def run_experiments():
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["stage1_exp"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-
+            c["augmentations"]["time_augs"] = experiment["augmentations"]
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, SEED)
