@@ -15,7 +15,7 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-Messiah-Augs-Run"
+STAGE1_PROJECT_NAME = "S1-Massiah-ReconRate-Run"
 STAGE2_PROJECT_NAME = "S2-Messiah-Run"
 
 # Stage 1 experiments to run
@@ -44,7 +44,9 @@ SEED = 1
 STAGE1_EPOCHS = 250  # 1000
 STAGE2_EPOCHS = 1000
 
-STAGE1_AUGS = ["amplitude_resize", "window_warp", "gaussian_noise"]
+STAGE1_AUGS = ["amplitude_resize", "window_warp"]
+
+STAGE1_AUG_RECON_RATE = [0.05,0.1,0.15,0.2]
 
 
 # Main experiment function
@@ -80,11 +82,13 @@ def run_experiments():
                 "stage1_exp": exp,
                 "augmented_data": (exp != ""),
                 "orthogonal_reg_weight": ortho_reg,
+                "aug_recon_rate": aug_recon_rate,
                 "project_name": STAGE1_PROJECT_NAME,
                 "epochs": STAGE1_EPOCHS,
                 "train_fn": train_vqvae if exp == "" else train_ssl_vqvae,
                 "full_embed": False,
             }
+            for aug_recon_rate in STAGE1_AUG_RECON_RATE
             for ortho_reg in [0, 10]
             for exp in STAGE1_EXPS
         ]
@@ -134,7 +138,7 @@ def run_experiments():
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["stage1_exp"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-
+            c["VQVAE"]["aug_recon_rate"] = experiment["aug_recon_rate"]
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, SEED)
