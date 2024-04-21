@@ -15,20 +15,20 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-S&S"
-STAGE2_PROJECT_NAME = "S2-S&S"
+STAGE1_PROJECT_NAME = "S1-Vanilla-Embed"
+STAGE2_PROJECT_NAME = "S2-Vanilla-Embed"
 
 # Stage 1 experiments to run
-STAGE1_EXPS = ["vibcreg", "barlowtwins"]  # empty string means regular VQVAE
+STAGE1_EXPS = [""] #["vibcreg", "barlowtwins"]  # empty string means regular VQVAE
 # Datasets to run experiments on
 UCR_SUBSET = [
     # "ElectricDevices",
     # "StarLightCurves",
     # "Wafer",
     # "ECG5000",
-    # "TwoPatterns",
+    "TwoPatterns",
     "FordA",
-    # "UWaveGestureLibraryAll",
+    "UWaveGestureLibraryAll",
     # "FordB",
     # "ChlorineConcentration",
     "ShapesAll",
@@ -85,7 +85,6 @@ def run_experiments():
                 "train_fn": train_vqvae if exp == "" else train_ssl_vqvae,
                 "full_embed": False,
             }
-            for aug_recon_rate in [0.05,0.1]
             for ortho_reg in [0, 10]
             for exp in STAGE1_EXPS
 
@@ -102,8 +101,9 @@ def run_experiments():
                 "project_name": STAGE2_PROJECT_NAME,
                 "epochs": STAGE2_EPOCHS,
                 "train_fn": train_maskgit,
-                "full_embed": (exp != ""),
+                "full_embed": (emb),
             }
+            for emb in [True, False]
             for ortho_reg in [0, 10]
             for exp in STAGE1_EXPS
         ]
