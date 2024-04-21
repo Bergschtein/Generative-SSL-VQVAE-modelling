@@ -15,8 +15,8 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-Messiah-Augs-Run"
-STAGE2_PROJECT_NAME = "S2-Messiah-Run"
+STAGE1_PROJECT_NAME = "S1-S&S"
+STAGE2_PROJECT_NAME = "S2-S&S"
 
 # Stage 1 experiments to run
 STAGE1_EXPS = ["vibcreg", "barlowtwins"]  # empty string means regular VQVAE
@@ -26,9 +26,9 @@ UCR_SUBSET = [
     # "StarLightCurves",
     # "Wafer",
     # "ECG5000",
-    "TwoPatterns",
+    # "TwoPatterns",
     "FordA",
-    "UWaveGestureLibraryAll",
+    # "UWaveGestureLibraryAll",
     # "FordB",
     # "ChlorineConcentration",
     "ShapesAll",
@@ -37,20 +37,15 @@ UCR_SUBSET = [
 NUM_RUNS_PER = 1
 # Controls
 RUN_STAGE1 = True
-RUN_STAGE2 = False
+RUN_STAGE2 = True
 
 SEED = 5
 # Epochs:
-STAGE1_EPOCHS = 250  # 1000
+STAGE1_EPOCHS = 1000  # 1000
 STAGE2_EPOCHS = 1000
 
-# STAGE1_AUGS = ["amplitude_resize", "window_warp", "gaussian_noise", "slice_and_shuffle"]
-STAGE1_AUGS = [["amplitude_resize", "window_warp", "gaussian_noise", "slice_and_shuffle"],
-               ["amplitude_resize", "window_warp", "gaussian_noise"],
-               ["amplitude_resize", "window_warp"],
-               ["amplitude_resize"]
-               ]
 
+STAGE1_AUGS = ["slice_and_shuffle"]
 
 # Main experiment function
 def run_experiments():
@@ -64,7 +59,7 @@ def run_experiments():
     config["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
     # Only reconstruct original view:
 
-    # config["augmentations"]["time_augs"] = STAGE1_AUGS
+    config["augmentations"]["time_augs"] = STAGE1_AUGS
 
     config["seed"] = SEED
     config["id"] = generate_short_id(
@@ -86,12 +81,11 @@ def run_experiments():
                 "augmented_data": (exp != ""),
                 "orthogonal_reg_weight": ortho_reg,
                 "project_name": STAGE1_PROJECT_NAME,
-                "augmentations": augs,
                 "epochs": STAGE1_EPOCHS,
                 "train_fn": train_vqvae if exp == "" else train_ssl_vqvae,
                 "full_embed": False,
             }
-            for augs in STAGE1_AUGS
+            for aug_recon_rate in [0.05,0.1]
             for ortho_reg in [0, 10]
             for exp in STAGE1_EXPS
 
@@ -142,7 +136,6 @@ def run_experiments():
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["stage1_exp"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-            c["augmentations"]["time_augs"] = experiment["augmentations"]
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, SEED)
