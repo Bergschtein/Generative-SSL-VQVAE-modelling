@@ -20,6 +20,7 @@ from scipy.stats import kurtosis, skew
 from scipy.special import entr
 
 from models.stage2.maskgit import MaskGIT
+from models.stage2.full_embedding_maskgit import Full_Embedding_MaskGIT
 from preprocessing.preprocess_ucr import UCRDatasetImporter
 from models.stage2.sample import unconditional_sample, conditional_sample
 from supervised_FCN.example_pretrained_model_loading import load_pretrained_FCN
@@ -85,6 +86,61 @@ class Evaluation(object):
         # load
         fname = (
             f"{model_filename(self.config, 'maskgit')}-{self.subset_dataset_name}.ckpt"
+        )
+        try:
+            ckpt_fname = os.path.join("saved_models", fname)
+            maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+        except FileNotFoundError:
+            ckpt_fname = Path(tempfile.gettempdir()).joinpath(fname)
+            maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+
+        # inference mode
+        maskgit.eval()
+
+        # sampling
+        if kind == "unconditional":
+            x_new = unconditional_sample(
+                maskgit, n_samples, self.device, batch_size=self.batch_size
+            )  # (b c l); b=n_samples, c=1 (univariate)
+        elif kind == "conditional":
+            x_new = conditional_sample(
+                maskgit, n_samples, self.device, class_index, self.batch_size
+            )  # (b c l); b=n_samples, c=1 (univariate)
+        else:
+            raise ValueError
+
+        return x_new
+
+    def sampleFullEmbedMaskGit(
+        self,
+        n_samples: int,
+        input_length: int,
+        n_classes: int,
+        kind: str,
+        device: torch.device,
+        class_index: int = -1,
+        load_finetuned_codebook: bool = False,
+    ):
+        assert kind in ["unconditional", "conditional"]
+
+        # build
+        maskgit = Full_Embedding_MaskGIT(
+            input_length,
+            **self.config["MaskGIT"],
+            config=self.config,
+            n_classes=n_classes,
+            finetune_codebook=False,
+            device=device,
+            load_finetuned_codebook=load_finetuned_codebook,
+        ).to(self.device)
+
+        # load
+        model_name = "fullembed-maskgit"
+        if load_finetuned_codebook:
+            model_name += "-finetuned"
+
+        fname = (
+            f"{model_filename(self.config, model_name)}-{self.subset_dataset_name}.ckpt"
         )
         try:
             ckpt_fname = os.path.join("saved_models", fname)

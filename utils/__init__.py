@@ -95,28 +95,35 @@ def freeze(model):
         param.requires_grad = False
 
 
-def experiment_name(experiment, seed):
-    stage1_exp = experiment["stage1_exp"]
-    stage1_exp = f"{stage1_exp}-" if stage1_exp != "" else ""
+def experiment_name(experiment, seed, ID):
+    ssl_method = experiment["ssl_method"]
+    ssl_method = f"{ssl_method}-" if ssl_method != "" else ""
     decorr = "decorr-" if experiment["orthogonal_reg_weight"] > 0 else ""
     stage = "stage1" if experiment["stage"] == 1 else "stage2"
     seed = f"-seed{seed}"
-    return "".join([decorr, stage1_exp, stage, seed])
+    id = f"-{ID}"
+    return "".join([decorr, ssl_method, stage, seed, id])
 
 
 def generate_short_id(length=6):
     char_set = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
     np_chars = np.array(list(char_set))
-
     random_chars = np.random.choice(np_chars, size=length)
-
     short_id = "".join(random_chars)
     return short_id
 
 
 def model_filename(config, model_type):
-    model_types = {"encoder", "decoder", "vqmodel", "maskgit"}
+    model_types = {
+        "encoder",
+        "decoder",
+        "vqmodel",
+        "maskgit",
+        "fullembed-maskgit",
+        "fullembed-maskgit-finetuned",
+        "vqmodel-finetuned",
+        "finetuned_codebook",
+    }
 
     assert model_type in model_types, "Non valid model type"
 
@@ -137,8 +144,7 @@ def model_filename(config, model_type):
 
     filename_parts.append(f"-seed-{seed}")
 
-    if config["id"] != None:
-        filename_parts.append(f"-{config['id']}")
+    filename_parts.append(f"-{config['ID']}")
 
     return "".join(part for part in filename_parts if part)
 
@@ -173,6 +179,39 @@ def save_model(models_dict: dict, dirname="saved_models", id: str = ""):
             torch.save(
                 model.state_dict(),
                 get_root_dir().joinpath(dirname, model_name + id_ + ".ckpt"),
+            )
+
+
+def save_codebook(codebook_dict: dict, dirname="saved_models", id: str = ""):
+    """
+    :param codebook_dict: {'codebook_name': tensor, ...}
+    """
+    try:
+        if not os.path.isdir(get_root_dir().joinpath(dirname)):
+            os.mkdir(get_root_dir().joinpath(dirname))
+
+        id_ = id[:]
+        if id != "":
+            id_ = "-" + id_
+        for codebook_name, tensor in codebook_dict.items():
+            torch.save(
+                tensor,
+                get_root_dir().joinpath(dirname, codebook_name + id_ + ".ckpt"),
+            )
+    except PermissionError:
+        # dirname = tempfile.mkdtemp()
+        dirname = tempfile.gettempdir()
+        print(
+            f"\nThe codebook is saved in the following temporary dirname due to some permission error: {dirname}.\n"
+        )
+
+        id_ = id[:]
+        if id != "":
+            id_ = "-" + id_
+        for codebook_name, tensor in codebook_dict.items():
+            torch.save(
+                tensor,
+                get_root_dir().joinpath(dirname, codebook_name + id_ + ".ckpt"),
             )
 
 

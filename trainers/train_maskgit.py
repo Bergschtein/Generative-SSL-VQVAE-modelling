@@ -19,6 +19,7 @@ from utils import (
     get_root_dir,
     load_yaml_param_settings,
     save_model,
+    save_codebook,
     model_filename,
 )
 
@@ -48,6 +49,7 @@ def train_maskgit(
     wandb_run_name="",
     torch_seed=0,
     full_embed=False,
+    finetune_codebook=False,
 ):
     """
     :param do_validate: if True, validation is conducted during training with a test dataset.
@@ -60,12 +62,21 @@ def train_maskgit(
     # initiate model:
     if full_embed:
         train_exp = ExpFullEmbedMaskGIT(
-            input_length, config, len(train_data_loader.dataset), n_classes
+            input_length=input_length,
+            config=config,
+            n_train_samples=len(train_data_loader.dataset),
+            n_classes=n_classes,
+            finetune_codebook=finetune_codebook,
+            load_finetuned_codebook=False,
+            device=gpu_device_idx,
         )
+        exp_name = "fullembed-maskgit"
+        exp_name += "-finetuned" if finetune_codebook else ""
     else:
         train_exp = ExpMaskGIT(
             input_length, config, len(train_data_loader.dataset), n_classes
         )
+        exp_name = "maskgit"
 
     wandb_logger = WandbLogger(
         project=wandb_project_name, name=wandb_run_name, config=config
@@ -97,9 +108,15 @@ def train_maskgit(
 
     print("saving the model...")
     save_model(
-        {model_filename(config, "maskgit"): train_exp.maskgit},
+        {model_filename(config, exp_name): train_exp.maskgit},
         id=config["dataset"]["dataset_name"],
     )
+    # Save codebook if it is finetuned
+    if finetune_codebook and full_embed:
+        save_codebook(
+            {model_filename(config, "finetuned_codebook"): train_exp.maskgit.cb_stage1},
+            id=config["dataset"]["dataset_name"],
+        )
 
     print("evaluating...")
     print("FID, IS, PCA, TSNE")
@@ -112,15 +129,29 @@ def train_maskgit(
         config=config,
         batch_size=config["dataset"]["batch_sizes"]["stage2"],
     )
-    x_gen = evaluation.sampleMaskGit(
-        max(
-            evaluation.X_test.shape[0],
-            config["dataset"]["batch_sizes"]["stage2"],
-        ),
-        input_length,
-        n_classes,
-        "unconditional",
-    )
+    if full_embed:
+        x_gen = evaluation.sampleFullEmbedMaskGit(
+            max(
+                evaluation.X_test.shape[0],
+                config["dataset"]["batch_sizes"]["stage2"],
+            ),
+            input_length,
+            n_classes,
+            "unconditional",
+            device=gpu_device_idx,
+            load_finetuned_codebook=finetune_codebook,
+            # Load the finetuned codebook
+        )
+    else:
+        x_gen = evaluation.sampleMaskGit(
+            max(
+                evaluation.X_test.shape[0],
+                config["dataset"]["batch_sizes"]["stage2"],
+            ),
+            input_length,
+            n_classes,
+            "unconditional",
+        )
 
     z_test, z_gen = evaluation.compute_z(x_gen)
     fid, (z_test, z_gen) = evaluation.fid_score(z_test, z_gen)

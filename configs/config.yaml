@@ -1,5 +1,5 @@
 seed: 0
-id: None
+ID: "000000"
 
 dataset:
   dataset_name: "TwoPatterns"
@@ -19,7 +19,7 @@ trainer_params:
   gpus:
     - 0
   max_epochs:
-    stage1: 1000
+    stage1: 10
     stage2: 10 #1000 #1000 #10000
 
 encoder:
@@ -60,9 +60,6 @@ MaskGIT:
     ff_mult: 1
     use_rmsnorm: True
     p_unconditional: 0.2
-
-  # For the BYOL MaskGIT
-  moving_average_decay: 0.9
 
 class_guidance:
   guidance_scale: 1.
