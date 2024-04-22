@@ -15,8 +15,8 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-finetune"
-STAGE2_PROJECT_NAME = "S2-finetune"
+STAGE1_PROJECT_NAME = "S1-Vanilla-Embed"
+STAGE2_PROJECT_NAME = "S2-Vanilla-Embed"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
@@ -39,12 +39,12 @@ RUN_STAGE2 = True
 
 SEED = 5
 # Epochs:
-STAGE1_EPOCHS = 10  # 1000
-STAGE2_EPOCHS = 10
+STAGE1_EPOCHS = 5  # 1000
+STAGE2_EPOCHS = 5
 
 STAGE1_AUGS = ["window_warp", "amplitude_resize"]
 # Stage 1 SSL methods to run
-SSL_METHODS = ["vibcreg"]  # empty string means regular VQVAE
+SSL_METHODS = [""]  # empty string means regular VQVAE
 
 FINETUNE_CODEBOOK = True
 
@@ -54,7 +54,8 @@ INCLUDE_DECORRELATION = False
 def generate_experiments():
     experiments = []
     orhogonal_reg_weights = [0, 10] if INCLUDE_DECORRELATION else [0]
-    finetunes = [False, True]
+    # finetunes = [False, True]
+    full_embeds = [False, True]
 
     if RUN_STAGE1:
         experiments += [
@@ -62,14 +63,14 @@ def generate_experiments():
                 "stage": 1,
                 "ssl_method": ssl_method,
                 "augmented_data": (ssl_method != ""),
-                "orthogonal_reg_weight": 0,  # ortho_reg,
+                "orthogonal_reg_weight": ortho_reg,
                 "project_name": STAGE1_PROJECT_NAME,
                 "epochs": STAGE1_EPOCHS,
                 "train_fn": train_vqvae if ssl_method == "" else train_ssl_vqvae,
                 "full_embed": False,
                 "finetune_codebook": False,
             }
-            # for ortho_reg in orhogonal_reg_weights
+            for ortho_reg in orhogonal_reg_weights
             for ssl_method in SSL_METHODS
         ]
 
@@ -79,15 +80,30 @@ def generate_experiments():
                 "stage": 2,
                 "ssl_method": ssl_method,
                 "augmented_data": False,
-                "orthogonal_reg_weight": 0,  # ortho_reg,
+                "orthogonal_reg_weight": ortho_reg,
+                "project_name": STAGE2_PROJECT_NAME,
+                "epochs": STAGE2_EPOCHS,
+                "train_fn": train_maskgit,
+                "full_embed": full_embed,  # (ssl_method != ""),
+                "finetune_codebook": False,
+            }
+            for full_embed in full_embeds
+            for ortho_reg in orhogonal_reg_weights
+            for ssl_method in SSL_METHODS
+        ]
+        experiments += [
+                        {
+                "stage": 2,
+                "ssl_method": ssl_method,
+                "augmented_data": False,
+                "orthogonal_reg_weight": ortho_reg,
                 "project_name": STAGE2_PROJECT_NAME,
                 "epochs": STAGE2_EPOCHS,
                 "train_fn": train_maskgit,
                 "full_embed": True,  # (ssl_method != ""),
-                "finetune_codebook": finetune,
+                "finetune_codebook": True,
             }
-            for finetune in finetunes
-            # for ortho_reg in orhogonal_reg_weights
+            for ortho_reg in orhogonal_reg_weights
             for ssl_method in SSL_METHODS
         ]
     return experiments
@@ -161,10 +177,15 @@ def run_experiments():
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["ssl_method"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
+            c["MaskGIT"]["finetune_codebook"] = experiment["finetune_codebook"]
+            c["MaskGIT"]["full_embed"] = experiment["full_embed"]
+
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, SEED, c["ID"])
                 run_name += "finetune" if experiment["finetune_codebook"] else ""
+                run_name += "full_embed" if experiment["full_embed"] else ""
+
                 # Set correct data loader
                 if experiment["stage"] == 1:
                     train_data_loader = (

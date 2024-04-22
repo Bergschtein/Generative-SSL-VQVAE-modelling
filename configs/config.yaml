@@ -60,6 +60,9 @@ MaskGIT:
     ff_mult: 1
     use_rmsnorm: True
     p_unconditional: 0.2
+  finetune_codebook: False
+  full_embed: False
+
 
 class_guidance:
   guidance_scale: 1.
