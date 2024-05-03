@@ -20,15 +20,15 @@ STAGE2_PROJECT_NAME = "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
-    "ElectricDevices",
-    "StarLightCurves",
-    "Wafer",
-    "ECG5000",
-    "TwoPatterns",
-    # "FordA",
-    # "UWaveGestureLibraryAll",
-    # "FordB",
-    # "ShapesAll",
+    # "ElectricDevices",
+    # "StarLightCurves",
+    # "Wafer",
+    # "ECG5000",
+    # "TwoPatterns",
+    "FordA",
+    "UWaveGestureLibraryAll",
+    "FordB",
+    "ShapesAll",
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
@@ -36,7 +36,7 @@ NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEEDS = [2]
+SEEDS = [4]
 
 # Epochs:
 STAGE1_EPOCHS = 1000
@@ -145,7 +145,7 @@ def run_experiments(seed):
     c["ID"] = generate_short_id(length=6)
     # all models in the experiment will use this id.
 
-    experiments = generate_experiments()  # Generate experiments to run
+    experiments = generate_experiments()  # Generate experiments to run.
 
     print("Experiments to run:")
     for i, exp in enumerate(experiments):
@@ -160,14 +160,16 @@ def run_experiments(seed):
             train_data_loader_stage1_aug,
             train_data_loader_stage2,
             test_data_loader,
-        ) = build_data_pipelines(c)
+        ) = build_data_pipelines(
+            c
+        )  # Will be work on the torch.manual(seed)
 
         # Running experiments:
         for experiment in experiments:
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["ssl_method"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-            c["VQVAE"]["aug_recon_rate"] = experiment["aug_recon_rate"]
+
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, seed, c["ID"])

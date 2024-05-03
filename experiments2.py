@@ -15,8 +15,8 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-V-Embed"
-STAGE2_PROJECT_NAME = "S2-V-Embed"
+STAGE1_PROJECT_NAME = "S1-Master-Run"
+STAGE2_PROJECT_NAME = "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
@@ -27,35 +27,38 @@ UCR_SUBSET = [
     "TwoPatterns",
     "FordA",
     "UWaveGestureLibraryAll",
-    # "FordB",
-    # "ChlorineConcentration",
+    "FordB",
     "ShapesAll",
 ]
 # NUmber of runs per experiment
-NUM_RUNS_PER = 1
+NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
 # Controls
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEED = 5
+SEEDS = [3]
+
 # Epochs:
-STAGE1_EPOCHS = 1000  # 1000
+STAGE1_EPOCHS = 1000
 STAGE2_EPOCHS = 1000
 
 STAGE1_AUGS = ["window_warp", "amplitude_resize"]
+AUG_RECON_RATE = 0.1
+
 # Stage 1 SSL methods to run
-SSL_METHODS = [""]  # empty string means regular VQVAE
+SSL_METHODS = [
+    "",
+    "vibcreg",
+    "barlowtwins",
+]  # empty string means regular VQVAE / no SSL
 
 FINETUNE_CODEBOOK = True
-
-INCLUDE_DECORRELATION = False
+INCLUDE_DECORRELATION = True
 
 
 def generate_experiments():
     experiments = []
     orhogonal_reg_weights = [0, 10] if INCLUDE_DECORRELATION else [0]
-    # finetunes = [False, True]
-    full_embeds = [False, True]
 
     if RUN_STAGE1:
         experiments += [
@@ -67,8 +70,9 @@ def generate_experiments():
                 "project_name": STAGE1_PROJECT_NAME,
                 "epochs": STAGE1_EPOCHS,
                 "train_fn": train_vqvae if ssl_method == "" else train_ssl_vqvae,
-                "full_embed": False,
-                "finetune_codebook": False,
+                # train_fn is train_vqvae if no SSL method, else train_ssl_vqvae
+                "full_embed": False,  # Stage 1 does not use full embed
+                "finetune_codebook": False,  # Stage 1 does not finetune codebook
             }
             for ortho_reg in orhogonal_reg_weights
             for ssl_method in SSL_METHODS
@@ -84,24 +88,9 @@ def generate_experiments():
                 "project_name": STAGE2_PROJECT_NAME,
                 "epochs": STAGE2_EPOCHS,
                 "train_fn": train_maskgit,
-                "full_embed": full_embed,  # (ssl_method != ""),
-                "finetune_codebook": False,
-            }
-            for full_embed in full_embeds
-            for ortho_reg in orhogonal_reg_weights
-            for ssl_method in SSL_METHODS
-        ]
-        experiments += [
-                        {
-                "stage": 2,
-                "ssl_method": ssl_method,
-                "augmented_data": False,
-                "orthogonal_reg_weight": ortho_reg,
-                "project_name": STAGE2_PROJECT_NAME,
-                "epochs": STAGE2_EPOCHS,
-                "train_fn": train_maskgit,
-                "full_embed": True,  # (ssl_method != ""),
-                "finetune_codebook": True,
+                "full_embed": (ssl_method != ""),  # full embed only for SSL methods
+                "finetune_codebook": (ssl_method != "") and FINETUNE_CODEBOOK,
+                # finetune codebook only for SSL methods
             }
             for ortho_reg in orhogonal_reg_weights
             for ssl_method in SSL_METHODS
@@ -139,9 +128,9 @@ def build_data_pipelines(config):
 
 
 # Main experiment function
-def run_experiments():
+def run_experiments(seed):
     # Set manual seed
-    torch.manual_seed(SEED)
+    torch.manual_seed(seed)
     # load config
     config_dir = get_root_dir().joinpath("configs", "config.yaml")
     config = load_yaml_param_settings(config_dir)
@@ -151,7 +140,8 @@ def run_experiments():
     c["trainer_params"]["max_epochs"]["stage1"] = STAGE1_EPOCHS
     c["trainer_params"]["max_epochs"]["stage2"] = STAGE2_EPOCHS
     c["augmentations"]["time_augs"] = STAGE1_AUGS
-    c["seed"] = SEED
+    c["VQVAE"]["aug_recon_rate"] = AUG_RECON_RATE
+    c["seed"] = seed
     c["ID"] = generate_short_id(length=6)
     # all models in the experiment will use this id.
 
@@ -182,7 +172,7 @@ def run_experiments():
 
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
-                run_name = experiment_name(experiment, SEED, c["ID"])
+                run_name = experiment_name(experiment, seed, c["ID"])
                 run_name += "finetune" if experiment["finetune_codebook"] else ""
                 run_name += "full_embed" if experiment["full_embed"] else ""
 
@@ -198,7 +188,7 @@ def run_experiments():
 
                 # experiment trainer:
                 experiment["train_fn"](
-                    # Stage 1 and 2
+                    # Stage 1 and 2:
                     config=c,
                     train_data_loader=train_data_loader,
                     test_data_loader=test_data_loader,
@@ -206,12 +196,13 @@ def run_experiments():
                     gpu_device_idx=0,
                     wandb_run_name=f"{run_name}-{dataset}",
                     wandb_project_name=experiment["project_name"],
-                    torch_seed=SEED,
-                    # Stage 2:
+                    torch_seed=seed,
+                    # Stage 2 using SSL:
                     full_embed=experiment["full_embed"],
                     finetune_codebook=experiment["finetune_codebook"],
                 )
 
 
 if __name__ == "__main__":
-    run_experiments()
+    for seed in SEEDS:
+        run_experiments(seed)
