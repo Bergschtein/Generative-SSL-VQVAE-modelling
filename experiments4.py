@@ -20,15 +20,20 @@ STAGE2_PROJECT_NAME = "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
-    "ElectricDevices",
-    "StarLightCurves",
-    "Wafer",
-    "ECG5000",
-    "TwoPatterns",
+    # "ElectricDevices",
+    # "StarLightCurves",
+    # "Wafer",
+    # "ECG5000",
+    # "TwoPatterns",
     # "FordA",
     # "UWaveGestureLibraryAll",
     # "FordB",
+    # "ChlorineConcentration",
     # "ShapesAll",
+    'SonyAIBORobotSurface1', 
+    'SonyAIBORobotSurface2', 
+    'Symbols',
+    'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
@@ -145,7 +150,7 @@ def run_experiments(seed):
     c["ID"] = generate_short_id(length=6)
     # all models in the experiment will use this id.
 
-    experiments = generate_experiments()  # Generate experiments to run.
+    experiments = generate_experiments()  # Generate experiments to run
 
     print("Experiments to run:")
     for i, exp in enumerate(experiments):
@@ -160,9 +165,7 @@ def run_experiments(seed):
             train_data_loader_stage1_aug,
             train_data_loader_stage2,
             test_data_loader,
-        ) = build_data_pipelines(
-            c
-        )  # Will be work on the torch.manual(seed)
+        ) = build_data_pipelines(c)
 
         # Running experiments:
         for experiment in experiments:
@@ -177,6 +180,7 @@ def run_experiments(seed):
                 run_name = experiment_name(experiment, seed, c["ID"])
                 run_name += "finetune" if experiment["finetune_codebook"] else ""
                 run_name += "full_embed" if experiment["full_embed"] else ""
+
                 # Set correct data loader
                 if experiment["stage"] == 1:
                     train_data_loader = (

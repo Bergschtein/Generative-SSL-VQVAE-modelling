@@ -140,11 +140,11 @@ class Examiner():
                 test_data_loader = self.loader_dict[dataset][1]
                 X_test = test_data_loader.dataset.X
                 Y_test = test_data_loader.dataset.Y
-                lables = np.unique(Y_train)
+                lables = np.unique(Y_test)
 
                 for i in range(len(lables)):
                     mask = np.squeeze(Y_test == i)
-                    x_conditional = X_train[mask, :]
+                    x_conditional = X_test[mask, :]
                     nr_of_samples = x_conditional.shape[0]
                     for x in x_conditional:
                         plt.plot(x, color = colors[i%8], alpha = 0.4)        

@@ -20,15 +20,20 @@ STAGE2_PROJECT_NAME = "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
-    "ElectricDevices",
-    "StarLightCurves",
-    "Wafer",
-    "ECG5000",
-    "TwoPatterns",
+    # "ElectricDevices",
+    # "StarLightCurves",
+    # "Wafer",
+    # "ECG5000",
+    # "TwoPatterns",
     # "FordA",
     # "UWaveGestureLibraryAll",
     # "FordB",
+    # "ChlorineConcentration",
     # "ShapesAll",
+    'SonyAIBORobotSurface1', 
+    'SonyAIBORobotSurface2', 
+    'Symbols',
+    'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
@@ -36,7 +41,7 @@ NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEEDS = [2]
+SEEDS = [3]
 
 # Epochs:
 STAGE1_EPOCHS = 1000
@@ -167,11 +172,15 @@ def run_experiments(seed):
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["ssl_method"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-            c["VQVAE"]["aug_recon_rate"] = experiment["aug_recon_rate"]
+            c["MaskGIT"]["finetune_codebook"] = experiment["finetune_codebook"]
+            c["MaskGIT"]["full_embed"] = experiment["full_embed"]
+
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, seed, c["ID"])
                 run_name += "finetune" if experiment["finetune_codebook"] else ""
+                run_name += "full_embed" if experiment["full_embed"] else ""
+
                 # Set correct data loader
                 if experiment["stage"] == 1:
                     train_data_loader = (
