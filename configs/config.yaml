@@ -61,7 +61,6 @@ MaskGIT:
     use_rmsnorm: True
     p_unconditional: 0.2
 
-
 class_guidance:
   guidance_scale: 1.
 
@@ -142,7 +141,7 @@ augmentations:
     crop_ratio: 0.4
     noise_std: 0.1
     AmpR_rate: 0.2
-    slope_rate: 0.001
+    slope_rate: 0.005
     #TimeFreq
     #Block aug:
     block_size_scale: 0.05

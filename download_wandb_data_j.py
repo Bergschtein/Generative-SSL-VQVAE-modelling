@@ -4,75 +4,251 @@ from tqdm import tqdm
 import wandb
 
 filters = {
-    "regular": {
-        "config.SSL.stage1_method": "",
-        "config.VQVAE.orthogonal_reg_weight": 0,
-    },
-    "regular-decorr": {
-        "config.SSL.stage1_method": "",
-        "config.VQVAE.orthogonal_reg_weight": 10,
-    },
-    "vibcreg": {
+
+    "vibcreg-0.05": {
         "config.SSL.stage1_method": "vibcreg",
         "config.VQVAE.orthogonal_reg_weight": 0,
-        "config.VQVAE.aug_recon_rate": 0,
+        "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "vibcreg-decorr": {
+    "vibcreg-0.1": {
         "config.SSL.stage1_method": "vibcreg",
-        "config.VQVAE.orthogonal_reg_weight": 10,
-        "config.VQVAE.aug_recon_rate": 0,
-    },
-    "barlowtwins": {
-        "config.SSL.stage1_method": "barlowtwins",
         "config.VQVAE.orthogonal_reg_weight": 0,
-        "config.VQVAE.aug_recon_rate": 0,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "barlowtwins-decorr": {
-        "config.SSL.stage1_method": "barlowtwins",
-        "config.VQVAE.orthogonal_reg_weight": 10,
-        "config.VQVAE.aug_recon_rate": 0,
-    },
-    "byol": {
-        "config.SSL.stage1_method": "byol",
+    "vibcreg-0.15": {
+        "config.SSL.stage1_method": "vibcreg",
         "config.VQVAE.orthogonal_reg_weight": 0,
-        "config.VQVAE.aug_recon_rate": 0,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "byol-decorr": {
-        "config.SSL.stage1_method": "byol",
-        "config.VQVAE.orthogonal_reg_weight": 10,
-        "config.VQVAE.aug_recon_rate": 0,
+    "vibcreg-0.2": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
 
-        "vibcreg-aug-r": {
-        "config.SSL.stage1_method": "vibcreg",
-        "config.VQVAE.orthogonal_reg_weight": 0,
-        "config.VQVAE.aug_recon_rate": 0.05,
-    },
-    "vibcreg-decorr-aug-r": {
+    "vibcreg-0.05-decorr": {
         "config.SSL.stage1_method": "vibcreg",
         "config.VQVAE.orthogonal_reg_weight": 10,
         "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "barlowtwins-aug-r": {
+    "vibcreg-0.1-decorr": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "vibcreg-0.15-decorr": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "vibcreg-0.2-decorr": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+
+        "vibcreg-0.05-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.1-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.15-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.2-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+
+    "vibcreg-0.05-decorr-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.1-decorr-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.15-decorr-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "vibcreg-0.2-decorr-ss": {
+        "config.SSL.stage1_method": "vibcreg",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+
+
+
+
+    "barlowtwins-0.05": {
         "config.SSL.stage1_method": "barlowtwins",
         "config.VQVAE.orthogonal_reg_weight": 0,
         "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "barlowtwins-decorr-aug-r": {
+    "barlowtwins-0.1": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "barlowtwins-0.15": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "barlowtwins-0.2": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+
+    "barlowtwins-0.05-decorr": {
         "config.SSL.stage1_method": "barlowtwins",
         "config.VQVAE.orthogonal_reg_weight": 10,
         "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
     },
-    "byol-aug-r": {
-        "config.SSL.stage1_method": "byol",
+    "barlowtwins-0.1-decorr": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "barlowtwins-0.15-decorr": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+    "barlowtwins-0.2-decorr": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['amplitude_resize','window_warp']
+
+    },
+
+        "barlowtwins-0.05-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
         "config.VQVAE.orthogonal_reg_weight": 0,
         "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
     },
-    "byol-decorr-aug-r": {
-        "config.SSL.stage1_method": "byol",
+    "barlowtwins-0.1-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "barlowtwins-0.15-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "barlowtwins-0.2-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 0,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+
+    "barlowtwins-0.05-decorr-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
         "config.VQVAE.orthogonal_reg_weight": 10,
         "config.VQVAE.aug_recon_rate": 0.05,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
     },
+    "barlowtwins-0.1-decorr-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.1,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "barlowtwins-0.15-decorr-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.15,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+    "barlowtwins-0.2-decorr-ss": {
+        "config.SSL.stage1_method": "barlowtwins",
+        "config.VQVAE.orthogonal_reg_weight": 10,
+        "config.VQVAE.aug_recon_rate": 0.2,
+        "config.augmentations.time_augs": ['slice_and_shuffle']
+
+    },
+
+
+
+
+    # "barlowtwins": {
+    #     "config.SSL.stage1_method": "barlowtwins",
+    #     "config.VQVAE.orthogonal_reg_weight": 0,
+    # },
+
+
 }
 
 
@@ -126,7 +302,7 @@ def wandb_stage1_summary_to_csv(wandb_stage1_project, dataset, api=wandb.Api()):
 
     metrics_keys = [
         "loss",
-        "ssl_loss",
+        "val_recon_loss",
         "svm_accuracy",
         "knn_accuracy",
         "perplexity",
@@ -256,20 +432,20 @@ def wandb_stage2_summary_to_csv(wandb_stage2_project, dataset, api=wandb.Api()):
 
 
 datasets = [
-    "ElectricDevices",
-    "StarLightCurves",
-    "Wafer",
-    "ECG5000",
-    "TwoPatterns",
-    "FordA",
-    "UWaveGestureLibraryAll",
-    "FordB",
-    "ChlorineConcentration",
+    # "ElectricDevices",
+    # "StarLightCurves",
+    # "Wafer",
+    # "ECG5000",
+    # "TwoPatterns",
+    # "FordA",
+    # "UWaveGestureLibraryAll",
+    # "FordB",
+    # "ChlorineConcentration",
     "ShapesAll",
 ]
 
 if __name__ == "__main__":
-    wandb_stage1_proj = "S1-Aug-Slice&Shuffle"
+    wandb_stage1_proj = "S1-Massiah-ReconRate-Run"
     wandb_stage2_proj = "Final-Stage2-Gaussian"
 
     for dataset in datasets:
