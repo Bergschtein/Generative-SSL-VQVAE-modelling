@@ -1,5 +1,8 @@
 seed: 4
 ID: "000000"
+FINETUNE: True
+EMBED: True
+
 
 dataset:
   dataset_name: "UWaveGestureLibraryAll"

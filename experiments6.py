@@ -15,8 +15,8 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-Master-Run"
-STAGE2_PROJECT_NAME = "S2-Master-Run"
+STAGE1_PROJECT_NAME = "S1-Vanilla-Embed"
+STAGE2_PROJECT_NAME = "S2-Vanilla-Embed"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
@@ -36,7 +36,7 @@ NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEEDS = [4]
+SEEDS = [1,4]
 
 # Epochs:
 STAGE1_EPOCHS = 1000
@@ -52,8 +52,9 @@ SSL_METHODS = [
     "barlowtwins",
 ]  # empty string means regular VQVAE / no SSL
 
-FINETUNE_CODEBOOK = True
-INCLUDE_DECORRELATION = True
+FINETUNE_CODEBOOK = [False, True]
+
+INCLUDE_DECORRELATION = False
 
 
 def generate_experiments():
@@ -89,11 +90,28 @@ def generate_experiments():
                 "epochs": STAGE2_EPOCHS,
                 "train_fn": train_maskgit,
                 "full_embed": (ssl_method != ""),  # full embed only for SSL methods
-                "finetune_codebook": (ssl_method != "") and FINETUNE_CODEBOOK,
+                "finetune_codebook": (ssl_method != "") and finetune,
                 # finetune codebook only for SSL methods
             }
             for ortho_reg in orhogonal_reg_weights
+            for finetune in FINETUNE_CODEBOOK
             for ssl_method in SSL_METHODS
+        ]
+        experiments += [
+            {
+                "stage": 2,
+                "ssl_method": ssl_method,
+                "augmented_data": False,
+                "orthogonal_reg_weight": ortho_reg,
+                "project_name": STAGE2_PROJECT_NAME,
+                "epochs": STAGE2_EPOCHS,
+                "train_fn": train_maskgit,
+                "full_embed": False,  # full embed only for SSL methods
+                "finetune_codebook": False,
+                # finetune codebook only for SSL methods
+            }
+            for ortho_reg in orhogonal_reg_weights
+            for ssl_method in ["vibcreg","barlowtwins"] 
         ]
     return experiments
 
@@ -143,6 +161,7 @@ def run_experiments(seed):
     c["VQVAE"]["aug_recon_rate"] = AUG_RECON_RATE
     c["seed"] = seed
     c["ID"] = generate_short_id(length=6)
+   
     # all models in the experiment will use this id.
 
     experiments = generate_experiments()  # Generate experiments to run.
@@ -153,7 +172,6 @@ def run_experiments(seed):
 
     for dataset in UCR_SUBSET:
         c["dataset"]["dataset_name"] = dataset
-
         # Build data pipelines
         (
             train_data_loader_stage1,
@@ -169,10 +187,12 @@ def run_experiments(seed):
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["ssl_method"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-
+            c["FINETUNE"] = experiment["finetune_codebook"]
+            c["EMBED"] = experiment["full_embed"]
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
                 run_name = experiment_name(experiment, seed, c["ID"])
+                run_name += "full_embed" if experiment["full_embed"] else ""
                 run_name += "finetune" if experiment["finetune_codebook"] else ""
                 # Set correct data loader
                 if experiment["stage"] == 1:
