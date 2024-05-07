@@ -172,8 +172,8 @@ def run_experiments(seed):
             # Only configure stage 1 method:
             c["SSL"][f"stage1_method"] = experiment["ssl_method"]
             c["VQVAE"]["orthogonal_reg_weight"] = experiment["orthogonal_reg_weight"]
-            c["MaskGIT"]["finetune_codebook"] = experiment["finetune_codebook"]
-            c["MaskGIT"]["full_embed"] = experiment["full_embed"]
+            # c["MaskGIT"]["finetune_codebook"] = experiment["finetune_codebook"]
+            # c["MaskGIT"]["full_embed"] = experiment["full_embed"]
 
             for run in range(NUM_RUNS_PER):
                 # Wandb run name:
