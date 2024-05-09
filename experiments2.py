@@ -15,7 +15,7 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-Master-Run"
+STAGE1_PROJECT_NAME = "S1-Massiah-ReconRate-Run"
 STAGE2_PROJECT_NAME = "S2-Master-Run"
 
 # Datasets to run experiments on
@@ -24,35 +24,35 @@ UCR_SUBSET = [
     # "StarLightCurves",
     # "Wafer",
     # "ECG5000",
-    # "TwoPatterns",
-    # "FordA",
-    # "UWaveGestureLibraryAll",
+    "TwoPatterns",
+    "FordA",
+    "UWaveGestureLibraryAll",
     # "FordB",
     # "ChlorineConcentration",
-    # "ShapesAll",
-    'SonyAIBORobotSurface1', 
-    'SonyAIBORobotSurface2', 
-    'Symbols',
-    'Mallat'
+    "ShapesAll",
+    # 'SonyAIBORobotSurface1', 
+    # 'SonyAIBORobotSurface2', 
+    # 'Symbols',
+    # 'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
 # Controls
 RUN_STAGE1 = True
-RUN_STAGE2 = True
+RUN_STAGE2 = False
 
-SEEDS = [2]
+SEEDS = [1,5]
 
 # Epochs:
 STAGE1_EPOCHS = 1000
 STAGE2_EPOCHS = 1000
 
-STAGE1_AUGS = ["window_warp", "amplitude_resize"]
-AUG_RECON_RATE = 0.1
+STAGE1_AUGS = ["slice_and_shuffle"]
+AUG_RECON_RATE = 0.0
 
 # Stage 1 SSL methods to run
 SSL_METHODS = [
-    "",
+    # "",
     "vibcreg",
     "barlowtwins",
 ]  # empty string means regular VQVAE / no SSL
