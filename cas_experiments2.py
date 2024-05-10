@@ -29,11 +29,11 @@ UCR_SUBSET = [
     # "Wafer",
     # "ECG5000",
     # "TwoPatterns",
-    "FordA",
-    "UWaveGestureLibraryAll",
-    "FordB",
+    # "FordA",
+    # "UWaveGestureLibraryAll",
+    # "FordB",
     # "ChlorineConcentration",
-    "ShapesAll",
+    # "ShapesAll",
     'SonyAIBORobotSurface1', 
     'SonyAIBORobotSurface2', 
     'Symbols',
@@ -48,7 +48,7 @@ SSL_METHODS = [
 ]  # empty string means regular VQVAE / no SSL
 
 
-SEEDS = [2]
+SEEDS = [1,3,4]
 
 
 def generate_experiments():

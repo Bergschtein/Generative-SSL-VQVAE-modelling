@@ -1,19 +1,11 @@
 import os
 
 generated_ids = [
-    "LG2NXX",
-    "VIKZXZ",
-    "C2YRMJ",
-    "9JD4T6",
-    "VVAKN4",
-    "Y0GLJF",
-    "RPLNFI",
-    "KIB0NU",
-    "F2LDIG",
-    "TUMNVE",
-    "29MI0Y",
-    "VH38NH",
-    "TV9GFU",
+    "P8VIGP",
+    "6B4P9V",
+    "ILB5XV",
+    "ZFMIWQ",
+    "239Y9A"
 ]
 
 
@@ -32,5 +24,5 @@ def clean_saved_models(dir):
 
 
 if __name__ == "__main__":
-    dir = "saved_models_copy"
+    dir = "saved_models"
     clean_saved_models(dir)
