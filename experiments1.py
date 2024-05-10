@@ -15,8 +15,8 @@ import torch
 
 
 # Wandb logging information
-STAGE1_PROJECT_NAME = "S1-Massiah-ReconRate-Run"
-STAGE2_PROJECT_NAME = "S2-Master-Run"
+STAGE1_PROJECT_NAME = "test"  # "S1-Master-Run"
+STAGE2_PROJECT_NAME = "test"  # "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
@@ -25,8 +25,8 @@ UCR_SUBSET = [
     # "Wafer",
     # "ECG5000",
     "TwoPatterns",
-    "FordA",
-    "UWaveGestureLibraryAll",
+    # "FordA",
+    # "UWaveGestureLibraryAll",
     # "FordB",
     # "ChlorineConcentration",
     "ShapesAll",
@@ -41,11 +41,11 @@ NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to
 RUN_STAGE1 = True
 RUN_STAGE2 = False
 
-SEEDS = [1,5]
+SEEDS = [1]
 
 # Epochs:
-STAGE1_EPOCHS = 1000
-STAGE2_EPOCHS = 1000
+STAGE1_EPOCHS = 1
+STAGE2_EPOCHS = 1
 
 STAGE1_AUGS = ["window_warp", "amplitude_resize"]
 AUG_RECON_RATE = 0.0
@@ -58,7 +58,7 @@ SSL_METHODS = [
 ]  # empty string means regular VQVAE / no SSL
 
 FINETUNE_CODEBOOK = True
-INCLUDE_DECORRELATION = True
+INCLUDE_DECORRELATION = False
 
 
 def generate_experiments():
