@@ -10,6 +10,6 @@ exp_params:
 trainer_params:
   gpus:
     - 0
-  max_epochs: 1000
+  max_epochs: 500
 
 ema: 0.99
