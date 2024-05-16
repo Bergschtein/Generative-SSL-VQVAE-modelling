@@ -47,7 +47,7 @@ SEEDS = [1, 5]
 STAGE1_EPOCHS = 1000
 STAGE2_EPOCHS = 1000
 
-STAGE1_AUGS = ["window_warp", "amplitude_resize"]
+STAGE1_AUGS = ["slice_and_shuffle"]
 AUG_RECON_RATE = 0.2
 
 # Stage 1 SSL methods to run
