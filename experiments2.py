@@ -20,20 +20,19 @@ STAGE2_PROJECT_NAME = "S2-Augs"  # "S2-Master-Run"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
-    "ElectricDevices",
-    # "StarLightCurves",
-    # "Wafer",
-    # "ECG5000",
-    "TwoPatterns",
-    "FordA",
-    "UWaveGestureLibraryAll",
-    "FordB",
-    # "ChlorineConcentration",
-    "ShapesAll",
-    # 'SonyAIBORobotSurface1', 
-    # 'SonyAIBORobotSurface2', 
-    'Symbols',
-    'Mallat'
+    "StarLightCurves",
+    "Wafer",
+    "ECG5000",
+    'SonyAIBORobotSurface1', 
+    'SonyAIBORobotSurface2', 
+    # "ElectricDevices",
+    # "TwoPatterns",
+    # "FordA",
+    # "UWaveGestureLibraryAll",
+    # "FordB",
+    # "ShapesAll",
+    # 'Symbols',
+    # 'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
