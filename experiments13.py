@@ -25,14 +25,14 @@ UCR_SUBSET = [
     "ECG5000",
     'SonyAIBORobotSurface1', 
     'SonyAIBORobotSurface2', 
-    # "ElectricDevices",
-    # "TwoPatterns",
-    # "FordA",
-    # "UWaveGestureLibraryAll",
-    # "FordB",
-    # "ShapesAll",
-    # 'Symbols',
-    # 'Mallat'
+    "ElectricDevices",
+    "TwoPatterns",
+    "FordA",
+    "UWaveGestureLibraryAll",
+    "FordB",
+    "ShapesAll",
+    'Symbols',
+    'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.
@@ -40,7 +40,7 @@ NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to
 RUN_STAGE1 = True
 RUN_STAGE2 = True
 
-SEEDS = [1, 5]
+SEEDS = [2]
 
 # Epochs:
 STAGE1_EPOCHS = 1000
