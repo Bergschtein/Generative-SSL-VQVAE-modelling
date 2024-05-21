@@ -43,17 +43,20 @@ import plotly.express as px
 class Examiner():
     def __init__(self, 
                  datasets = [
-                            "ElectricDevices",
-                            "StarLightCurves",
-                            "Wafer",
-                            "ECG5000",
-                            "TwoPatterns",
-                            "FordA",
-                            "UWaveGestureLibraryAll",
-                            "FordB",
-                            "ChlorineConcentration",
-                            "ShapesAll",
-                            ],
+                    "ElectricDevices",
+                    "StarLightCurves",
+                    "Wafer",
+                    "ECG5000",
+                    "TwoPatterns",
+                    "FordA",
+                    "UWaveGestureLibraryAll",
+                    "FordB",
+                    "ShapesAll",
+                    'SonyAIBORobotSurface1', 
+                    'SonyAIBORobotSurface2', 
+                    'Symbols',
+                    'Mallat'
+                ],
                     augment = True,        
                     ):
         self.augment = augment
@@ -116,7 +119,7 @@ class Examiner():
         
     def plot_datasets(self, train = True):
 
-        colors = ['blue','red', 'green', 'black', 'yellow', 'purple', 'brown', 'pink']
+        colors = ['blue','red', 'green', 'black', 'yellow', 'purple','pink'] #, 'brown', 'pink'
 
         if train:
             for dataset in self.datasets:
@@ -124,17 +127,46 @@ class Examiner():
                 train_data_loader = self.loader_dict[dataset][0]
                 X_train = train_data_loader.dataset.X
                 Y_train = train_data_loader.dataset.Y
-                lables = np.unique(Y_train)
+                labels = np.unique(Y_train)
 
-                for i in range(len(lables)):
+                for i in range(len(labels)):
                     mask = np.squeeze(Y_train == i)
                     x_conditional = X_train[mask, :]
                     nr_of_samples = x_conditional.shape[0]
                     for x in x_conditional:
-                        plt.plot(x, color = colors[i%8], alpha = 0.4)        
-                    plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
-                    plt.suptitle(f"Dataset name: {dataset}")
-                    plt.show()
+                        plt.plot(x, color = colors[i%len(colors)], alpha = 0.05)        
+                    # plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
+                # plt.suptitle(f"Dataset name: {dataset}")
+                plt.show()
+
+                # length = int(np.ceil(len(labels)/4))
+                # fig, axes = plt.subplots(length, np.min(4,len(labels)), figsize=(16, 12))
+
+                # for i in range(len(labels)):
+                #     mask = np.squeeze(Y_train == i)
+                #     x_conditional = X_train[mask, :]
+                #     nr_of_samples = x_conditional.shape[0]
+                #     for x in x_conditional:
+                #         plt.plot(x, color = colors[i%len(colors)], alpha = 0.1)        
+                #     # plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
+                # plt.suptitle(f"Dataset name: {dataset}")
+                # plt.show()
+
+
+                # for i in range(len(labels)):
+                #     mask = np.squeeze(Y_train == i)
+                #     x_conditional = X_train[mask, :]
+                #     nr_of_samples = x_conditional.shape[0]
+                #     for x in x_conditional:
+                #         row = i // 4
+                #         col = i % 4
+                #         axes[row, col].plot(x, color=colors[i % len(colors)], alpha=0.1)
+                #         axes[row, col].set_title(f"Class: {i}, Nr of samples: {nr_of_samples}")
+
+                # plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+                # plt.suptitle(f"Dataset name: {dataset}", fontsize=16)
+                # plt.show()
+
         else:
             for dataset in self.datasets:
                 test_data_loader = self.loader_dict[dataset][1]
@@ -147,7 +179,7 @@ class Examiner():
                     x_conditional = X_test[mask, :]
                     nr_of_samples = x_conditional.shape[0]
                     for x in x_conditional:
-                        plt.plot(x, color = colors[i%8], alpha = 0.4)        
+                        plt.plot(x, color = colors[i%8], alpha = 0.1)        
                     plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
                     plt.suptitle(f"Dataset name: {dataset}")
                     plt.show()
