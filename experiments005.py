@@ -26,13 +26,13 @@ UCR_SUBSET = [
     # 'SonyAIBORobotSurface1', 
     # 'SonyAIBORobotSurface2', 
     # "ElectricDevices",
-    "TwoPatterns",
+    # "TwoPatterns",
     # "FordA",
     # "UWaveGestureLibraryAll",
     # "FordB",
     # "ShapesAll",
-    # 'Symbols',
-    # 'Mallat'
+    'Symbols',
+    'Mallat'
 ]
 # NUmber of runs per experiment
 NUM_RUNS_PER = 1  # Will overwrite models in saved_models. Recomennded to set to 1.

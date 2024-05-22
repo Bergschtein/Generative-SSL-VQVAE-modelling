@@ -26,11 +26,11 @@ UCR_SUBSET = [
     # 'SonyAIBORobotSurface1', 
     # 'SonyAIBORobotSurface2', 
     # "ElectricDevices",
-    "TwoPatterns",
-    # "FordA",
+    # "TwoPatterns",
+    "FordA",
     # "UWaveGestureLibraryAll",
     # "FordB",
-    # "ShapesAll",
+    # # "ShapesAll",
     # 'Symbols',
     # 'Mallat'
 ]
