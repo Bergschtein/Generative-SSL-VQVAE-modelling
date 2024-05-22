@@ -29,7 +29,7 @@ UCR_SUBSET = [
     # "TwoPatterns",
     # "FordA",
     # "UWaveGestureLibraryAll",
-    "FordB",
+    # "FordB",
     "ShapesAll",
     'Symbols',
     'Mallat'
