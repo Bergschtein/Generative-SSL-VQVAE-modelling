@@ -20,19 +20,19 @@ import torch
 
 
 # Wandb logging information
-CAS_PROJECT_NAME = "Master-CAS-Run"
+CAS_PROJECT_NAME = "CAS-Augs"
 
 # Datasets to run experiments on
 UCR_SUBSET = [
-    # "ElectricDevices",
-    # "StarLightCurves",
-    # "Wafer",
-    # "ECG5000",
-    # "TwoPatterns",
+    "ElectricDevices",
+    "StarLightCurves",
+    "Wafer",
+    "ECG5000",
+    "TwoPatterns",
     "FordA",
     "UWaveGestureLibraryAll",
     "FordB",
-    # "ChlorineConcentration",
+    "ChlorineConcentration",
     "ShapesAll",
     'SonyAIBORobotSurface1', 
     'SonyAIBORobotSurface2', 
@@ -42,14 +42,21 @@ UCR_SUBSET = [
 
 # Stage 1 SSL methods to run
 SSL_METHODS = [
-    "",
+    # "",
     "vibcreg",
     "barlowtwins",
 ]  # empty string means regular VQVAE / no SSL
 
 
-SEEDS = [2]
+SEEDS = [3,5]
 
+STAGE1_AUGS = ["gaussian_noise"]
+
+AUG_ID = {
+    "gaussian_noise": ["J4D3NQ","Q1A6TB", "CYVIE9","2KCBSS","SIPCYD","DQZWZT"],
+    "window_warp": ["6AAE13", "XKF8ZB", "P6MCKO", "WO3S0Z","Y3A7B9", "OQFZY4", "MKA6WK", "N7NDDJ", "PWECBS", "XF3BTF"],
+    "slice_and_shuffle": ["GDAQEN", "WIZQZ6", "75MW58", "T3PZKA", "52933I", "NAZB6U"]
+}
 
 def generate_experiments():
     experiments = []
@@ -110,7 +117,7 @@ def run_cas_experiments(seed):
     c_cas = config_cas.copy()
 
     c["seed"] = seed
-
+    c["augmentations"]["time_augs"] = STAGE1_AUGS
     experiments = generate_experiments()
 
     for dataset in UCR_SUBSET:
@@ -126,8 +133,10 @@ def run_cas_experiments(seed):
 
             c["SSL"]["stage1_method"] = exp["ssl_method"]
 
-            # IDs to runs on dataset with ssl method
-            relevant_ids = search_relevant_ids(c)
+            # IDs to runs on dataset with ssl method and correct augs. 
+            
+            relevant_ids = search_relevant_ids(c, AUG_ID[STAGE1_AUGS[0]])
+
             print(f"Running {exp['ssl_method']} on {dataset} with ids {relevant_ids}")
             for id in relevant_ids:
                 c["ID"] = id

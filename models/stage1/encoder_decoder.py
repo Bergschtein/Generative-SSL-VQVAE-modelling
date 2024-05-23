@@ -211,7 +211,7 @@ class VQVAEDecoder(nn.Module):
 if __name__ == "__main__":
     import numpy as np
 
-    x = torch.rand(1, 2, 4, 128)  # (batch, channels, height, width)
+    x = torch.rand(1, 2, 4, 125)  # (batch, channels, height, width)
 
     encoder = VQVAEEncoder(d=32, num_channels=2, downsample_rate=4, n_resnet_blocks=2)
     decoder = VQVAEDecoder(d=32, num_channels=2, downsample_rate=4, n_resnet_blocks=2)

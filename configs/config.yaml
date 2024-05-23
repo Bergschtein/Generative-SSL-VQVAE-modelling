@@ -1,11 +1,11 @@
-seed: 4
+seed: 5
 ID: "000000"
 FINETUNE: True
 EMBED: True
 
 
 dataset:
-  dataset_name: "UWaveGestureLibraryAll"
+  dataset_name: "ShapesAll"
   in_channels: 1
   data_scaling: True
   batch_sizes:
@@ -68,7 +68,7 @@ class_guidance:
   guidance_scale: 1.
 
 SSL:
-  stage1_method: "vibcreg" # "barlowtwins", "vicreg", "vibcreg" or empty
+  stage1_method: "" #barlowtwins" # "barlowtwins", "vicreg", "vibcreg" or empty
   stage2_method: "" #"barlowtwins" "vicreg", "vibcreg"
 
   # Hyperparameters for SSL methods.
@@ -110,14 +110,14 @@ augmentations:
   time_augs:
     #- "noise"
     #- "random_crop"
-    - "amplitude_resize"
+    # - "amplitude_resize"
     #- "slope"
     #- "flip"
-    #- "gaussian_noise"
+    # - "gaussian_noise"
     #- noise_window
-    - window_warp
+    # - window_warp
     #- magnitude_warp
-    # - "slice_and_shuffle"
+    - "slice_and_shuffle"
   timefreq_augs:
     #- "random_masks"
     #- "block"
