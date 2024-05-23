@@ -50,7 +50,7 @@ SSL_METHODS = [
 
 SEEDS = [3,5]
 
-STAGE1_AUGS = ["window_warp", "amplitude_resize"]
+STAGE1_AUGS = ["slice_and_shuffle"]
 
 AUG_ID = {
     "gaussian_noise": ["J4D3NQ","Q1A6TB", "CYVIE9","2KCBSS","SIPCYD","DQZWZT"],
