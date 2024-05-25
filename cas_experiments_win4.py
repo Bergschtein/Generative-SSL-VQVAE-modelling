@@ -48,13 +48,13 @@ SSL_METHODS = [
 ]  # empty string means regular VQVAE / no SSL
 
 
-SEEDS = [3,5]
+SEEDS = [1,2]
 
 STAGE1_AUGS = ["window_warp", "amplitude_resize"]
 
 AUG_ID = {
     "gaussian_noise": ["J4D3NQ","Q1A6TB", "CYVIE9","2KCBSS","SIPCYD","DQZWZT"],
-    "window_warp": [" WO3S0Z", "OQFZY4"], #Only relevant for naive VQVAE (No ssl)
+    "window_warp": ["6AAE13", "Y3A7B9"], #Only relevant for naive VQVAE (No ssl) seed 1 and 2
     "slice_and_shuffle": ["GDAQEN", "WIZQZ6", "75MW58", "T3PZKA", "52933I", "NAZB6U"]
 }
 
