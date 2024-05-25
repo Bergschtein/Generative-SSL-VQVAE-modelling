@@ -48,7 +48,7 @@ metrics_keys1 = [
     "val_perplexity",
     "mean_abs_corr_off_diagonal",
     "mean_abs_cos_sim_off_diagonal",
-    "val_loss",
+    "val_recon_loss",
     "training_time",
 ]
 
