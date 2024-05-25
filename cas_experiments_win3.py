@@ -32,7 +32,6 @@ UCR_SUBSET = [
     "FordA",
     "UWaveGestureLibraryAll",
     "FordB",
-    "ChlorineConcentration",
     "ShapesAll",
     'SonyAIBORobotSurface1', 
     'SonyAIBORobotSurface2', 
