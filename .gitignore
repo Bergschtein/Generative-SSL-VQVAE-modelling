@@ -13,7 +13,9 @@ data/UCRArchive_2018
 data/UCRArchive_2018/
 data/
 wandb/
-saved_models/
+#saved_models/
+saved_models_old
+saved_models_main
 old_models/
 notes/.obsidian
 .slurm

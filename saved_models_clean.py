@@ -49,5 +49,5 @@ def clean_saved_models(dir):
 
 
 if __name__ == "__main__":
-    dir = "saved_models_copy"
+    dir = "saved_models"
     clean_saved_models(dir)
