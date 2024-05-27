@@ -1,29 +1,37 @@
 import os
 
+# DQZWZT vib and bt gauss all datasets. Seed 1
+# Y3A7B9 naive all datasets seed 1
+
 generated_ids = [
-    "J4D3NQ",
-    "Q1A6TB",
-    "CYVIE9",
-    "2KCBSS",
-    "6AAE13",
-    "XKF8ZB",
-    "SIPCYD",
-    "WO3S0Z",
-    "P6MCKO",
-    "GDAQEN",
-    "WIZQZ6",
-    "Y3A7B9",
-    "OQFZY4",
     "DQZWZT",
-    "MKA6WK",
-    "75MW58",
-    "N7NDDJ",
-    "T3PZKA",
-    "52933I",
-    "PWECBS",
-    "NAZB6U",
-    "XF3BTF"
+    "Y3A7B9"
 ]
+
+# generated_ids = [
+#     "J4D3NQ",
+#     "Q1A6TB",
+#     "CYVIE9",
+#     "2KCBSS",
+#     "6AAE13",
+#     "XKF8ZB",
+#     "SIPCYD",
+#     "WO3S0Z",
+#     "P6MCKO",
+#     "GDAQEN",
+#     "WIZQZ6",
+#     "Y3A7B9",
+#     "OQFZY4",
+#     "DQZWZT",
+#     "MKA6WK",
+#     "75MW58",
+#     "N7NDDJ",
+#     "T3PZKA",
+#     "52933I",
+#     "PWECBS",
+#     "NAZB6U",
+#     "XF3BTF"
+# ]
 
 
 def clean_saved_models(dir):
