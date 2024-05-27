@@ -4,7 +4,9 @@ from preprocessing.preprocess_ucr import AugUCRDataset
 from preprocessing.data_pipeline import build_data_pipeline
 from preprocessing.augmentations import Augmenter
 from models.stage2.maskgit import MaskGIT
+from models.stage2.full_embedding_maskgit import Full_Embedding_MaskGIT
 
+from models.stage2.sample import unconditional_sample, conditional_sample, plot_generated_samples
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
@@ -116,10 +118,36 @@ class Examiner():
     
     def datasets(self):
             return self.datasets
-        
+
+    def generate_samples(self, n_samples, label = None):
+        generative_model = self.maskgit
+        if label != None:
+            x_new = conditional_sample(
+                    generative_model = generative_model,
+                    n_samples = n_samples,
+                    device = "cpu",
+                    class_index = label,
+                    batch_size=256,
+                    return_representations=False,
+                    guidance_scale=1.0,
+                )
+        else:
+            x_new = unconditional_sample(
+                    generative_model = generative_model,
+                    n_samples = n_samples,
+                    device = "cpu",
+                    class_index = None,
+                    batch_size=256,
+                    return_representations=False,
+                    guidance_scale=1.0,
+                )
+        return np.squeeze(x_new)
+        # plot_generated_samples(x_new, title = f"Sample from class: {label}", max_len=20)        
+
+
     def plot_datasets(self, train = True):
 
-        colors = ['blue','red', 'green', 'black', 'yellow', 'purple','pink'] #, 'brown', 'pink'
+        colors = ['blue','red', 'green', 'black', 'brown', 'purple','pink'] #, 'brown', 'pink'
 
         if train:
             for dataset in self.datasets:
@@ -129,43 +157,22 @@ class Examiner():
                 Y_train = train_data_loader.dataset.Y
                 labels = np.unique(Y_train)
 
+                f, a = plt.subplots(len(labels), 1,figsize=(8, 2*len(labels)), sharex='col', sharey='row')
                 for i in range(len(labels)):
                     mask = np.squeeze(Y_train == i)
                     x_conditional = X_train[mask, :]
                     nr_of_samples = x_conditional.shape[0]
-                    for x in x_conditional:
-                        plt.plot(x, color = colors[i%len(colors)], alpha = 0.05)        
+
+                    a[i].set_title(f"Samples from class: {i}")
+                    a[i] = plot_new(a[i],x_conditional, color= colors[i%len(colors)])
+                    # for x in x_conditional:
+                    #     plt.plot(x, color = colors[i%len(colors)], alpha = 0.05)        
                     # plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
-                # plt.suptitle(f"Dataset name: {dataset}")
+                plt.suptitle(f"Dataset name: {dataset}")
                 plt.show()
 
-                # length = int(np.ceil(len(labels)/4))
-                # fig, axes = plt.subplots(length, np.min(4,len(labels)), figsize=(16, 12))
 
-                # for i in range(len(labels)):
-                #     mask = np.squeeze(Y_train == i)
-                #     x_conditional = X_train[mask, :]
-                #     nr_of_samples = x_conditional.shape[0]
-                #     for x in x_conditional:
-                #         plt.plot(x, color = colors[i%len(colors)], alpha = 0.1)        
-                #     # plt.title(f"Class: {i}, Nr of samples: {nr_of_samples}")
-                # plt.suptitle(f"Dataset name: {dataset}")
-                # plt.show()
-
-
-                # for i in range(len(labels)):
-                #     mask = np.squeeze(Y_train == i)
-                #     x_conditional = X_train[mask, :]
-                #     nr_of_samples = x_conditional.shape[0]
-                #     for x in x_conditional:
-                #         row = i // 4
-                #         col = i % 4
-                #         axes[row, col].plot(x, color=colors[i % len(colors)], alpha=0.1)
-                #         axes[row, col].set_title(f"Class: {i}, Nr of samples: {nr_of_samples}")
-
-                # plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-                # plt.suptitle(f"Dataset name: {dataset}", fontsize=16)
-                # plt.show()
+            
 
         else:
             for dataset in self.datasets:
@@ -217,6 +224,12 @@ class Examiner():
         plt.close()
 
     def load_models(self, dataset, ssl_method = "", decorr = False):
+            if ssl_method == "":
+                self.config['ID'] = "Y3A7B9"
+            else:
+                self.config['ID'] = "DQZWZT"
+            self.config['seed'] = 1
+            
             self.current_dataset = dataset
             self.config['dataset']['dataset_name'] = dataset
             self.config["SSL"]["stage1_method"] = ssl_method
@@ -226,22 +239,41 @@ class Examiner():
             input_length = self.loader_dict[dataset][0].dataset.X.shape[-1]
             n_classes = len(np.unique(self.loader_dict[dataset][0].dataset.Y))
 
-            self.maskgit = MaskGIT(
-            input_length,
-            **self.config["MaskGIT"],
-            config=self.config,
-            n_classes=n_classes,
-            )
-
-            fname = f"{model_filename(self.config, 'maskgit')}-{dataset}.ckpt"
-            try:
-                ckpt_fname = os.path.join("saved_models", fname)
-                self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
-            except FileNotFoundError:
-                ckpt_fname = Path(tempfile.gettempdir()).joinpath(fname)
-                self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
-            print(fname)    
-            print("maskgit loaded")
+            if ssl_method == "":
+                self.maskgit = MaskGIT(
+                input_length,
+                **self.config["MaskGIT"],
+                config=self.config,
+                n_classes=n_classes,
+                )
+                fname = f"maskgit-seed-1-Y3A7B9-{dataset}.ckpt"
+                try:
+                    ckpt_fname = os.path.join("saved_models", fname)
+                    self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+                except FileNotFoundError:
+                    ckpt_fname = Path(tempfile.gettempdir()).joinpath(fname)
+                    self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+                print(fname)    
+                print("maskgit loaded")
+            else:
+                self.maskgit = Full_Embedding_MaskGIT(
+                input_length,
+                **self.config["MaskGIT"],
+                config=self.config,
+                n_classes=n_classes,
+                finetune_codebook = True, 
+                load_finetuned_codebook = True,
+                device = "cpu"
+                )
+                fname = f"{ssl_method}-fullembed-maskgit-finetuned-seed-1-DQZWZT-{dataset}.ckpt"
+                try:
+                    ckpt_fname = os.path.join("saved_models", fname)
+                    self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+                except FileNotFoundError:
+                    ckpt_fname = Path(tempfile.gettempdir()).joinpath(fname)
+                    self.maskgit.load_state_dict(torch.load(ckpt_fname), strict=False)
+                print(fname)      
+                print("maskgit loaded")
             self.encoder = self.maskgit.encoder
             self.decoder = self.maskgit.decoder
             self.vq_model = self.maskgit.vq_model
@@ -335,3 +367,10 @@ def probes(x_tr, x_ts, y_tr, y_ts):
         "svm_accuracy": metrics.accuracy_score(y_ts, preds_svm),
     }
     return scores
+
+
+def plot_new(ax, x_new, color = "red", alpha = 0.1):
+    # nr_of_samples = x_new.shape[0]
+    for x in x_new:
+        ax.plot(x, color = color, alpha = alpha) 
+    return ax
