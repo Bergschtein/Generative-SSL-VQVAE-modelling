@@ -223,13 +223,21 @@ class Examiner():
         plt.show()
         plt.close()
 
-    def load_models(self, dataset, ssl_method = "", decorr = False):
+    def load_models(self, dataset, ssl_method = "", aug = None, decorr = False):
             if ssl_method == "":
                 self.config['ID'] = "Y3A7B9"
+                self.config['seed'] = 1
             else:
-                self.config['ID'] = "DQZWZT"
-            self.config['seed'] = 1
-            
+                if aug == "gauss":
+                    self.config['ID'] = "DQZWZT"
+                    self.config['seed'] = 1
+                if aug == "warp":
+                    self.config['ID'] = "P6MCKO"
+                    self.config['seed'] = 3
+                if aug == "warp":
+                    self.config['ID'] = "GDAQEN"
+                    self.config['seed'] = 2
+                
             self.current_dataset = dataset
             self.config['dataset']['dataset_name'] = dataset
             self.config["SSL"]["stage1_method"] = ssl_method

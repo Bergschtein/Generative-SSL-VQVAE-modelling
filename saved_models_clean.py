@@ -2,10 +2,14 @@ import os
 
 # DQZWZT vib and bt gauss all datasets. Seed 1
 # Y3A7B9 naive all datasets seed 1
+# P6MCKO vib and bt warp all datasets. seed 3
+# GDAQEN vib and bt slice all datasets. seed 2
 
 generated_ids = [
     "DQZWZT",
-    "Y3A7B9"
+    "Y3A7B9",
+    "P6MCKO",
+    "GDAQEN"
 ]
 
 # generated_ids = [
